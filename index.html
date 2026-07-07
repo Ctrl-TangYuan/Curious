@@ -3,150 +3,366 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CuriousSpace — Simulations</title>
+<title>CuriousSpace — Interactive Science Simulations</title>
 <style>
   :root {
     --orange: #F57C00;
     --orange-light: #FF9E40;
     --orange-deep: #E65100;
-    --bg: #ffffff;
-    --text: #212121;
+    --amber: #FFB300;
+    --bg: #fff7f0;
+    --surface: #ffffff;
+    --text: #1f2024;
     --text-soft: #616161;
     --border: #f0e0d0;
+    --shadow: rgba(245,124,0,0.18);
+    --chip-bg: #fff0e2;
+  }
+  html[data-theme="dark"] {
+    --bg: #14110e;
+    --surface: #1e1a16;
+    --text: #f4ede6;
+    --text-soft: #b7a99a;
+    --border: #3a2f26;
+    --shadow: rgba(0,0,0,0.5);
+    --chip-bg: #2a2018;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 40px 20px;
+    padding: 28px 20px 60px;
+    transition: background 0.3s ease, color 0.3s ease;
   }
-  .wrap { max-width: 900px; margin: 0 auto; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  /* ---------- Header ---------- */
   header {
-    text-align: center;
-    padding: 40px 20px 44px;
-    margin-bottom: 40px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, var(--orange-light) 0%, var(--orange) 55%, var(--orange-deep) 100%);
-    color: #fff;
-    box-shadow: 0 8px 24px rgba(245,124,0,0.25);
-  }
-  .brand {
-    font-size: 2.8rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-  }
-  .tagline {
-    margin-top: 12px;
-    font-size: 1.05rem;
-    opacity: 0.95;
-  }
-  .section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--orange-deep);
-    margin: 36px 0 18px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 18px;
-  }
-  a.card {
-    display: block;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px 20px;
-    text-decoration: none;
-    color: var(--text);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
     position: relative;
+    text-align: center;
+    padding: 54px 24px 58px;
+    margin-bottom: 26px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--orange-light) 0%, var(--orange) 52%, var(--orange-deep) 100%);
+    color: #fff;
+    box-shadow: 0 12px 34px var(--shadow);
     overflow: hidden;
+    isolation: isolate;
   }
-  a.card::before {
-    content: "";
+  .blob {
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--orange-light), var(--orange-deep));
+    border-radius: 50%;
+    background: rgba(255,255,255,0.16);
+    filter: blur(2px);
+    z-index: -1;
+    animation: float 9s ease-in-out infinite;
   }
-  a.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 18px rgba(245,124,0,0.2);
+  .blob.b1 { width: 150px; height: 150px; top: -40px; left: -30px; }
+  .blob.b2 { width: 90px; height: 90px; bottom: -30px; right: 40px; animation-delay: -3s; }
+  .blob.b3 { width: 60px; height: 60px; top: 30px; right: 90px; animation-delay: -6s; }
+  @keyframes float {
+    0%,100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-18px) scale(1.08); }
   }
-  .card-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text);
+  .badge-top {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 5px 14px; border-radius: 999px;
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(4px);
+  }
+  .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.4;transform:scale(1.5);} }
+  .brand {
+    font-size: 3.1rem; font-weight: 800; letter-spacing: -1px; line-height: 1;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  }
+  .brand .spark { display: inline-block; animation: spin 6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tagline { margin-top: 14px; font-size: 1.1rem; opacity: 0.95; font-weight: 400; }
+
+  /* ---------- Stats ---------- */
+  .stats {
+    display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;
+    margin-top: 26px;
+  }
+  .stat {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 14px; padding: 12px 22px; min-width: 96px;
+    backdrop-filter: blur(4px);
+  }
+  .stat .num { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+  .stat .lbl { font-size: 0.72rem; opacity: 0.9; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    position: sticky; top: 12px; z-index: 20;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 4px 16px var(--shadow);
     margin-bottom: 8px;
   }
-  .card-desc {
-    font-size: 0.88rem;
-    color: var(--text-soft);
-    line-height: 1.4;
+  .search {
+    flex: 1 1 200px; display: flex; align-items: center; gap: 8px;
+    background: var(--chip-bg); border-radius: 10px; padding: 9px 13px;
+    border: 1px solid transparent; transition: border-color .15s;
   }
+  .search:focus-within { border-color: var(--orange); }
+  .search input {
+    border: none; background: transparent; outline: none; width: 100%;
+    font-size: 0.95rem; color: var(--text); font-family: inherit;
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-soft); border-radius: 999px; padding: 8px 15px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: all .15s ease; font-family: inherit; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--orange); color: var(--orange-deep); }
+  .chip.active {
+    background: linear-gradient(135deg, var(--orange-light), var(--orange-deep));
+    color: #fff; border-color: transparent; box-shadow: 0 3px 10px var(--shadow);
+  }
+  .theme-toggle {
+    border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+    width: 42px; height: 42px; border-radius: 12px; font-size: 1.15rem;
+    display: grid; place-items: center; transition: all .15s;
+  }
+  .theme-toggle:hover { border-color: var(--orange); transform: rotate(15deg); }
+
+  /* ---------- Sections ---------- */
+  .section-title {
+    font-size: 1.35rem; font-weight: 800; color: var(--orange-deep);
+    margin: 34px 0 16px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  html[data-theme="dark"] .section-title { color: var(--amber); }
+  .section-title .count {
+    margin-left: auto; font-size: 0.75rem; font-weight: 700;
+    background: var(--chip-bg); color: var(--orange-deep);
+    padding: 3px 10px; border-radius: 999px;
+  }
+  html[data-theme="dark"] .section-title .count { color: var(--amber); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+
+  a.card {
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px 20px; text-decoration: none;
+    color: var(--text); position: relative; overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    opacity: 0; transform: translateY(14px);
+  }
+  a.card.reveal { opacity: 1; transform: translateY(0); }
+  a.card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--orange-light), var(--orange-deep));
+    transform: scaleX(0); transform-origin: left; transition: transform .25s ease;
+  }
+  a.card:hover { transform: translateY(-5px); box-shadow: 0 12px 26px var(--shadow); border-color: var(--orange-light); }
+  a.card:hover::before { transform: scaleX(1); }
+  .card-icon {
+    width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+    font-size: 1.5rem; background: var(--chip-bg);
+  }
+  .card-title { font-size: 1.18rem; font-weight: 700; color: var(--text); }
+  .card-desc { font-size: 0.88rem; color: var(--text-soft); line-height: 1.5; flex: 1; }
+  .card-tag {
+    align-self: flex-start; font-size: 0.72rem; font-weight: 700;
+    color: var(--orange-deep); background: var(--chip-bg);
+    padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  html[data-theme="dark"] .card-tag { color: var(--amber); }
+  .card-go { font-size: 0.82rem; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 5px; }
+  a.card:hover .card-go .arrow { transform: translateX(4px); }
+  .card-go .arrow { transition: transform .15s; }
+
+  .empty {
+    display: none; text-align: center; padding: 50px 20px; color: var(--text-soft);
+  }
+  .empty.show { display: block; }
+  .empty .big { font-size: 2.4rem; margin-bottom: 8px; }
+
   footer {
-    text-align: center;
-    margin-top: 50px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    font-size: 0.8rem;
-    color: var(--text-soft);
+    text-align: center; margin-top: 56px; padding-top: 26px;
+    border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text-soft);
+  }
+  footer .heart { color: var(--orange); }
+
+  @media (max-width: 480px) {
+    .brand { font-size: 2.4rem; }
+    .toolbar { top: 8px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand">CuriousSpace</div>
-    <div class="tagline">Interactive Science Simulations</div>
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <div class="badge-top"><span class="pulse-dot"></span> LIVE · Interactive Learning</div>
+    <div class="brand">Curious<span class="spark">✷</span>Space</div>
+    <div class="tagline">Hands-on science simulations that make concepts click</div>
+    <div class="stats">
+      <div class="stat"><div class="num" data-count="5">0</div><div class="lbl">Simulations</div></div>
+      <div class="stat"><div class="num" data-count="3">0</div><div class="lbl">Subjects</div></div>
+      <div class="stat"><div class="num" data-count="100">0</div><div class="lbl">% Interactive</div></div>
+    </div>
   </header>
 
-  <!-- ================= THERMAL PHYSICS ================= -->
-  <div class="section-title">🔥 Thermal Physics</div>
-  <div class="grid">
-    <a class="card" href="cooking-chef.html">
-      <div class="card-title">Cooking Chef</div>
-      <div class="card-desc">Heat, temperature, and energy transfer in the kitchen.</div>
-    </a>
+  <div class="toolbar">
+    <label class="search">
+      <span>🔍</span>
+      <input type="text" id="search" placeholder="Search simulations…" autocomplete="off">
+    </label>
+    <div class="filters" id="filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="thermal">🔥 Thermal</button>
+      <button class="chip" data-filter="electricity">⚡ Electricity</button>
+      <button class="chip" data-filter="light">💡 Light</button>
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
   </div>
 
-  <!-- ================= ELECTRICITY ================= -->
-  <div class="section-title">⚡ Electricity</div>
-  <div class="grid">
-    <a class="card" href="electricity-overview.html">
-      <div class="card-title">Electricity Overview</div>
-      <div class="card-desc">Current, voltage, and resistance — how they relate.</div>
-    </a>
-    <a class="card" href="current-splitting-snake.html">
-      <div class="card-title">Current Splitting Snake</div>
-      <div class="card-desc">Watch current divide across parallel paths.</div>
-    </a>
-    <a class="card" href="current-bank-analogy.html">
-      <div class="card-title">Current Bank Analogy</div>
-      <div class="card-desc">Understand current flow through a bank model.</div>
-    </a>
-  </div>
+  <div id="content"></div>
 
-  <!-- ================= LIGHT ================= -->
-  <div class="section-title">💡 Light</div>
-  <div class="grid">
-    <a class="card" href="laser-reflection.html">
-      <div class="card-title">Laser Reflection</div>
-      <div class="card-desc">Aim, reflect, and hit the target with light.</div>
-    </a>
+  <div class="empty" id="empty">
+    <div class="big">🔭</div>
+    <div>No simulations match your search — try another keyword.</div>
   </div>
 
   <footer>
-    © CuriousSpace — Built for curious minds.
+    Built with <span class="heart">♥</span> for curious minds · CuriousSpace © 2026
   </footer>
 </div>
+
+<script>
+  const DATA = [
+    { cat: "thermal", catLabel: "Thermal Physics", catIcon: "🔥", items: [
+      { title: "Cooking Chef", icon: "👨‍🍳", tag: "Heat Transfer", href: "cooking-chef.html",
+        desc: "Heat, temperature, and energy transfer in the kitchen." },
+    ]},
+    { cat: "electricity", catLabel: "Electricity", catIcon: "⚡", items: [
+      { title: "Electricity Overview", icon: "🔌", tag: "Circuits", href: "electricity-overview.html",
+        desc: "Current, voltage, and resistance — how they relate." },
+      { title: "Current Splitting Snake", icon: "🐍", tag: "Parallel", href: "current-splitting-snake.html",
+        desc: "Watch current divide across parallel paths." },
+      { title: "Current Bank Analogy", icon: "🏦", tag: "Analogy", href: "current-bank-analogy.html",
+        desc: "Understand current flow through a bank model." },
+    ]},
+    { cat: "light", catLabel: "Light", catIcon: "💡", items: [
+      { title: "Laser Reflection", icon: "🔦", tag: "Reflection", href: "laser-reflection.html",
+        desc: "Aim, reflect, and hit the target with light." },
+    ]},
+  ];
+
+  const content = document.getElementById('content');
+  const empty = document.getElementById('empty');
+  let activeFilter = "all";
+  let query = "";
+
+  function render() {
+    content.innerHTML = "";
+    let shown = 0;
+    DATA.forEach(section => {
+      if (activeFilter !== "all" && activeFilter !== section.cat) return;
+      const items = section.items.filter(it =>
+        (it.title + " " + it.desc + " " + it.tag).toLowerCase().includes(query)
+      );
+      if (!items.length) return;
+      shown += items.length;
+
+      const h = document.createElement('div');
+      h.className = 'section-title';
+      h.innerHTML = `<span>${section.catIcon}</span> ${section.catLabel}
+        <span class="count">${items.length}</span>`;
+      content.appendChild(h);
+
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      items.forEach(it => {
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = it.href;
+        a.innerHTML = `
+          <div class="card-icon">${it.icon}</div>
+          <span class="card-tag">${it.tag}</span>
+          <div class="card-title">${it.title}</div>
+          <div class="card-desc">${it.desc}</div>
+          <div class="card-go">Launch <span class="arrow">→</span></div>`;
+        grid.appendChild(a);
+      });
+      content.appendChild(grid);
+    });
+    empty.classList.toggle('show', shown === 0);
+    revealCards();
+  }
+
+  function revealCards() {
+    const cards = document.querySelectorAll('a.card');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('reveal'), i * 60);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    cards.forEach(c => io.observe(c));
+  }
+
+  // Search
+  document.getElementById('search').addEventListener('input', e => {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  // Filters
+  document.getElementById('filters').addEventListener('click', e => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+  });
+
+  // Theme toggle (persisted)
+  const themeBtn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('cs-theme');
+  if (saved === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️'; }
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (dark) { document.documentElement.removeAttribute('data-theme'); themeBtn.textContent = '🌙'; localStorage.setItem('cs-theme', 'light'); }
+    else { document.documentElement.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️'; localStorage.setItem('cs-theme', 'dark'); }
+  });
+
+  // Count-up stats
+  function countUp() {
+    document.querySelectorAll('.stat .num').forEach(el => {
+      const target = +el.dataset.count;
+      const step = Math.max(1, Math.ceil(target / 30));
+      let n = 0;
+      const t = setInterval(() => {
+        n += step;
+        if (n >= target) { n = target; clearInterval(t); }
+        el.textContent = target === 100 ? n : n;
+      }, 30);
+    });
+  }
+
+  render();
+  countUp();
+</script>
 </body>
 </html>
