@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<title>Ch 13 — Electrical Circuits Simulator</title>
+<style>
+:root{
+  --bg1:#0a0e27;
+  --bg2:#1a1a3e;
+  --card:#13183a;
+  --card2:#1c2350;
+  --bdr:#2a3170;
+  --cyan:#00D8FC;
+  --cyan-dim:#0099b8;
+  --yellow:#FAD53C;
+  --orange:#FF6F00;
+  --red:#EF5350;
+  --green:#66BB6A;
+  --txt:#ffffff;
+  --txt2:#9fb1d6;
+  --muted:#6c7da6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Open Sans','Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 100%);
+  color:var(--txt);
+  min-height:100vh;
+  padding:14px;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:1180px;margin:0 auto}
+header.hero{
+  background:linear-gradient(135deg,#001372 0%,#001a8c 60%,#0a2db0 100%);
+  border:1px solid var(--bdr);
+  border-radius:14px;
+  padding:18px 22px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+header.hero::after{
+  content:"";position:absolute;right:-40px;top:-40px;width:240px;height:240px;
+  background:radial-gradient(circle,rgba(0,216,252,0.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+header.hero h1{
+  font-size:1.45rem;font-weight:700;color:var(--cyan);letter-spacing:.3px;
+}
+header.hero p{color:var(--txt2);font-size:0.92rem;margin-top:4px}
+.chip{
+  display:inline-block;background:var(--card2);color:var(--cyan);
+  font-size:0.72rem;padding:3px 8px;border-radius:999px;
+  border:1px solid var(--cyan-dim);margin-top:8px;
+  font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+}
+.tabs{
+  display:flex;gap:6px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--bdr);
+  padding:6px;border-radius:12px;margin-bottom:14px;
+}
+.tab{
+  flex:1 1 auto;min-width:160px;
+  background:transparent;color:var(--txt2);
+  border:1px solid transparent;border-radius:8px;
+  padding:10px 12px;cursor:pointer;
+  font-size:0.92rem;font-weight:600;
+  text-align:center;transition:all .15s;
+  font-family:inherit;
+}
+.tab:hover{background:var(--card2);color:var(--txt)}
+.tab.active{background:var(--cyan);color:#001372;border-color:var(--cyan)}
+.tab .sub{display:block;font-size:0.7rem;font-weight:500;opacity:.7;margin-top:2px}
+.tab.active .sub{opacity:.85}
+
+.panel{display:none;animation:fadeIn .25s}
+.panel.active{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){
+  .panel.active{grid-template-columns:1fr}
+}
+
+.card{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:12px;padding:14px;
+}
+.card h3{
+  color:var(--cyan);font-size:1.0rem;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+  font-weight:700;
+}
+.card h3 .ico{font-size:1.15rem}
+
+canvas{
+  display:block;width:100%;height:auto;
+  background:radial-gradient(ellipse at center,#0e1538 0%,#080b22 70%,#04061a 100%);
+  border-radius:8px;border:1px solid var(--bdr);
+}
+
+/* Sliders */
+.slider-row{margin:12px 0}
+.slider-row .lbl{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.85rem;color:var(--txt2);margin-bottom:6px;
+}
+.slider-row .lbl .val{
+  font-family:'JetBrains Mono','Consolas',monospace;
+  font-weight:700;color:var(--yellow);font-size:0.95rem;
+  background:var(--card2);padding:2px 8px;border-radius:6px;
+  border:1px solid var(--bdr);min-width:64px;text-align:right;
+}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;
+  background:var(--bdr);border-radius:3px;outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  background:var(--cyan);border-radius:50%;cursor:pointer;
+  border:2px solid #001372;box-shadow:0 0 6px rgba(0,216,252,.5);
+}
+input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;background:var(--cyan);border-radius:50%;
+  cursor:pointer;border:2px solid #001372;
+}
+
+/* Step buttons (for N bulbs) */
+.stepper{
+  display:inline-flex;background:var(--card2);
+  border:1px solid var(--bdr);border-radius:6px;overflow:hidden;
+}
+.stepper button{
+  background:transparent;color:var(--cyan);border:none;
+  width:32px;height:30px;font-size:1.1rem;cursor:pointer;font-weight:700;
+}
+.stepper button:hover{background:var(--bdr)}
+.stepper .num{
+  width:36px;height:30px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--yellow);
+  background:var(--card);
+}
+
+/* Readouts */
+.readouts{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;
+}
+.readout{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:8px 10px;
+}
+.readout .k{font-size:0.72rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+.readout .v{
+  font-family:'JetBrains Mono',monospace;font-weight:700;
+  font-size:1.05rem;color:var(--cyan);margin-top:2px;
+}
+.readout.warn .v{color:var(--orange)}
+.readout.good .v{color:var(--green)}
+
+/* Per-bulb readouts list */
+.bulb-list{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.bulb-list .row{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--card2);border-radius:6px;padding:6px 10px;
+  font-size:0.85rem;border:1px solid var(--bdr);
+}
+.bulb-list .row .name{color:var(--txt2)}
+.bulb-list .row .nums{
+  font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--yellow);
+}
+.bulb-list .row.blown{opacity:0.5}
+.bulb-list .row.blown .nums{color:var(--red);text-decoration:line-through}
+
+/* Intro card */
+.intro{
+  background:linear-gradient(135deg,rgba(0,216,252,0.10),rgba(250,213,60,0.05));
+  border:1px solid var(--cyan-dim);border-radius:10px;padding:12px 14px;
+  margin-bottom:12px;position:relative;
+}
+.intro h4{color:var(--yellow);font-size:0.95rem;margin-bottom:6px}
+.intro p{font-size:0.85rem;color:var(--txt2);line-height:1.4}
+.intro .close-x{
+  position:absolute;top:8px;right:10px;background:transparent;border:none;
+  color:var(--txt2);font-size:1.2rem;cursor:pointer;line-height:1;
+}
+.intro .close-x:hover{color:var(--cyan)}
+
+/* Observation panel */
+.observe h4{color:var(--yellow);font-size:0.9rem;margin:8px 0 6px}
+.observe ul{font-size:0.85rem;color:var(--txt2);padding-left:18px;line-height:1.55}
+.observe ul li{margin-bottom:4px}
+
+/* Preset chips */
+.presets{margin-top:10px}
+.presets .lbl{font-size:0.75rem;color:var(--txt2);text-transform:uppercase;margin-bottom:5px;letter-spacing:.5px}
+.presets .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-btn{
+  background:var(--card2);color:var(--cyan);border:1px solid var(--cyan-dim);
+  border-radius:999px;padding:5px 12px;font-size:0.78rem;cursor:pointer;
+  font-family:inherit;font-weight:600;transition:all .15s;
+}
+.chip-btn:hover{background:var(--cyan);color:#001372}
+
+/* Footer buttons */
+.footer-actions{
+  display:flex;gap:8px;margin-top:12px;
+  padding-top:12px;border-top:1px solid var(--bdr);
+}
+.btn{
+  background:var(--card2);color:var(--txt);
+  border:1px solid var(--bdr);border-radius:8px;
+  padding:7px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;
+  font-family:inherit;transition:all .15s;
+}
+.btn:hover{background:var(--bdr)}
+.btn.primary{background:var(--cyan);color:#001372;border-color:var(--cyan)}
+.btn.primary:hover{background:var(--yellow);border-color:var(--yellow);color:#001372}
+
+/* Formula box (hidden by default) */
+.formula{
+  display:none;background:rgba(250,213,60,0.08);
+  border:1px solid var(--yellow);border-radius:8px;
+  padding:10px;margin-top:10px;
+  font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--yellow);
+  line-height:1.7;
+}
+.formula.shown{display:block}
+.formula .nm{color:var(--cyan)}
+
+/* Toast */
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:30px;z-index:100;
+  background:var(--card);border:2px solid var(--orange);
+  color:var(--txt);padding:12px 20px;border-radius:10px;
+  font-size:0.9rem;font-weight:600;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);
+  opacity:0;pointer-events:none;transition:all .25s;
+  max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.toast.error{border-color:var(--red)}
+.toast.success{border-color:var(--green)}
+
+/* Drag slots (meter quiz) */
+.drag-controls{
+  display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;
+  justify-content:center;
+}
+.drag-tile{
+  background:var(--card2);border:2px dashed var(--cyan-dim);border-radius:10px;
+  padding:10px 14px;cursor:grab;user-select:none;
+  display:flex;align-items:center;gap:8px;
+  font-weight:700;color:var(--cyan);min-width:120px;justify-content:center;
+}
+.drag-tile.placed{opacity:.4;cursor:not-allowed}
+.drag-tile.dragging{cursor:grabbing;opacity:0.7}
+.quiz-status{
+  margin-top:10px;font-size:0.9rem;text-align:center;
+  padding:8px;border-radius:8px;background:var(--card2);border:1px solid var(--bdr);
+  color:var(--txt2);
+}
+.quiz-status.win{color:var(--green);border-color:var(--green);background:rgba(102,187,106,0.1)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="hero">
+  <h1>⚡ Chapter 13 — Electrical Circuits Simulator</h1>
+  <p>Poke real circuits and watch the numbers update. Covers WS1 + WS2: components, current, voltage, resistance, series &amp; parallel.</p>
+  <span class="chip">Sec 2 G3/G2 Science</span>
+  <a href="ch13-coin-circuit-game.html" style="display:inline-block;margin-left:8px;background:linear-gradient(135deg,var(--yellow),var(--orange));color:#001372;padding:6px 14px;border-radius:999px;font-size:0.8rem;font-weight:700;text-decoration:none;box-shadow:0 0 12px rgba(250,213,60,.35)">💰 Coin Game →</a>
+  <a href="ch13-current-snake-game.html" style="display:inline-block;margin-left:6px;background:linear-gradient(135deg,#66BB6A,#4c9d50);color:#001372;padding:6px 14px;border-radius:999px;font-size:0.8rem;font-weight:700;text-decoration:none;box-shadow:0 0 12px rgba(102,187,106,.35)">🐍 Snake Game →</a>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab active" data-tab="series" onclick="switchTab('series')">🔗 Series Circuit<span class="sub">same current, voltage splits</span></button>
+  <button class="tab" data-tab="parallel" onclick="switchTab('parallel')">🔀 Parallel Circuit<span class="sub">same voltage, current splits</span></button>
+  <button class="tab" data-tab="ohm" onclick="switchTab('ohm')">📈 Ohm's Law Lab<span class="sub">V = I × R</span></button>
+  <button class="tab" data-tab="quiz" onclick="switchTab('quiz')">🎯 Meter Placement<span class="sub">A in series, V in parallel</span></button>
+  <button class="tab" data-tab="water" onclick="switchTab('water')">💧 Water Analogy<span class="sub">current vs PD made visible</span></button>
+</div>
+
+<!-- ====================================================== -->
+<!-- SCENE 1: SERIES                                        -->
+<!-- ====================================================== -->
+<section class="panel active" id="panel-series">
+  <div class="card">
+    <div class="intro" id="intro-series">
+      <button class="close-x" onclick="dismissIntro('series')">×</button>
+      <h4>🔗 What you'll explore</h4>
+      <p>Add 1, 2, or 3 identical bulbs in series. Watch the current stay the same everywhere, but each bulb get dimmer as you add more.</p>
+    </div>
+    <canvas id="cv-series" width="700" height="380"></canvas>
+    <div class="observe">
+      <h4>👀 What to observe</h4>
+      <ul>
+        <li>The current readings are <strong>identical</strong> at every point in the loop.</li>
+        <li>Adding a bulb → total resistance ↑ → current ↓ → every bulb dims.</li>
+        <li>The voltage across each identical bulb is <strong>V<sub>battery</sub> ÷ N</strong>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">🎛️</span> Controls</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Battery voltage</span><span class="val" id="r-s-V">6.0 V</span></div>
+      <input type="range" id="s-V" min="1" max="12" step="0.5" value="6">
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Number of bulbs (in series)</span>
+        <span class="stepper">
+          <button onclick="changeNS(-1)">−</button>
+          <span class="num" id="r-s-N">2</span>
+          <button onclick="changeNS(1)">+</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Extra fixed resistor</span><span class="val" id="r-s-R">0 Ω</span></div>
+      <input type="range" id="s-R" min="0" max="20" step="1" value="0">
+    </div>
+
+    <div class="readouts">
+      <div class="readout"><div class="k">Total resistance</div><div class="v" id="r-s-Rt">8 Ω</div></div>
+      <div class="readout"><div class="k">Current (everywhere)</div><div class="v" id="r-s-I">0.75 A</div></div>
+    </div>
+
+    <div class="bulb-list" id="r-s-bulbs"></div>
+
+    <div class="presets">
+      <div class="lbl">Try a preset:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="applyPreset('series','one')">1 bulb, bright</button>
+        <button class="chip-btn" onclick="applyPreset('series','three')">3 bulbs, dim</button>
+        <button class="chip-btn" onclick="applyPreset('series','boost')">Boost voltage</button>
+      </div>
+    </div>
+
+    <div class="formula" id="form-series">
+      R<sub>total</sub> = N × R<sub>bulb</sub> + R<sub>extra</sub><br>
+      I = <span class="nm">V<sub>battery</sub></span> ÷ R<sub>total</sub><br>
+      V<sub>per bulb</sub> = I × R<sub>bulb</sub><br>
+      P<sub>per bulb</sub> = I² × R<sub>bulb</sub>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" onclick="resetScene('series')">↺ Reset scene</button>
+      <button class="btn primary" onclick="toggleFormula('series')">∑ Show formulas</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SCENE 2: PARALLEL                                      -->
+<!-- ====================================================== -->
+<section class="panel" id="panel-parallel">
+  <div class="card">
+    <div class="intro" id="intro-parallel">
+      <button class="close-x" onclick="dismissIntro('parallel')">×</button>
+      <h4>🔀 What you'll explore</h4>
+      <p>Each branch is wired directly to the battery, so every branch sees the full battery voltage. <strong>Click a bulb to blow it</strong> — the others stay lit.</p>
+    </div>
+    <canvas id="cv-parallel" width="700" height="380"></canvas>
+    <div class="observe">
+      <h4>👀 What to observe</h4>
+      <ul>
+        <li>Voltage across every working branch = battery voltage (not split).</li>
+        <li>Adding a branch leaves each bulb's brightness <strong>unchanged</strong>, but the total current from the battery rises.</li>
+        <li>Blow a bulb → only that branch dies; the rest keep glowing.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">🎛️</span> Controls</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Battery voltage</span><span class="val" id="r-p-V">6.0 V</span></div>
+      <input type="range" id="p-V" min="1" max="12" step="0.5" value="6">
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Number of parallel branches</span>
+        <span class="stepper">
+          <button onclick="changeNP(-1)">−</button>
+          <span class="num" id="r-p-N">2</span>
+          <button onclick="changeNP(1)">+</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="readouts">
+      <div class="readout"><div class="k">Voltage per branch</div><div class="v" id="r-p-Vb">6.0 V</div></div>
+      <div class="readout"><div class="k">Total current</div><div class="v" id="r-p-It">3.00 A</div></div>
+    </div>
+
+    <div class="bulb-list" id="r-p-bulbs"></div>
+
+    <div class="presets">
+      <div class="lbl">Try a preset:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="applyPreset('parallel','two')">2 branches</button>
+        <button class="chip-btn" onclick="applyPreset('parallel','blow')">Blow one bulb</button>
+        <button class="chip-btn" onclick="applyPreset('parallel','allfresh')">All bulbs working</button>
+      </div>
+    </div>
+
+    <div class="formula" id="form-parallel">
+      I<sub>branch</sub> = <span class="nm">V<sub>battery</sub></span> ÷ R<sub>bulb</sub><br>
+      I<sub>total</sub> = I<sub>1</sub> + I<sub>2</sub> + I<sub>3</sub> + …<br>
+      V<sub>1</sub> = V<sub>2</sub> = V<sub>3</sub> = V<sub>battery</sub>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" onclick="resetScene('parallel')">↺ Reset scene</button>
+      <button class="btn primary" onclick="toggleFormula('parallel')">∑ Show formulas</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SCENE 3: OHM'S LAW                                     -->
+<!-- ====================================================== -->
+<section class="panel" id="panel-ohm">
+  <div class="card">
+    <div class="intro" id="intro-ohm">
+      <button class="close-x" onclick="dismissIntro('ohm')">×</button>
+      <h4>📈 What you'll explore</h4>
+      <p>Sweep voltage and resistance separately. The current bar reacts instantly, and the I-vs-V graph shows the straight-line relationship at constant R.</p>
+    </div>
+    <canvas id="cv-ohm" width="700" height="380"></canvas>
+    <div class="observe">
+      <h4>👀 What to observe</h4>
+      <ul>
+        <li>Double the voltage at constant R → current doubles. <em>I ∝ V</em>.</li>
+        <li>Double the resistance at constant V → current halves. <em>I ∝ 1/R</em>.</li>
+        <li>The graph line is always straight through the origin — that's Ohm's Law.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">🎛️</span> Controls</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Voltage (V)</span><span class="val" id="r-o-V">12.0 V</span></div>
+      <input type="range" id="o-V" min="0" max="24" step="0.5" value="12">
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Resistance (Ω)</span><span class="val" id="r-o-R">10 Ω</span></div>
+      <input type="range" id="o-R" min="1" max="100" step="1" value="10">
+    </div>
+
+    <div class="readouts">
+      <div class="readout good"><div class="k">Current I = V/R</div><div class="v" id="r-o-I">1.20 A</div></div>
+      <div class="readout"><div class="k">Power P = VI</div><div class="v" id="r-o-P">14.4 W</div></div>
+    </div>
+
+    <div class="presets">
+      <div class="lbl">Try a preset:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="applyPreset('ohm','low')">Low V, low R</button>
+        <button class="chip-btn" onclick="applyPreset('ohm','mains')">Mains-like (24 V)</button>
+        <button class="chip-btn" onclick="applyPreset('ohm','highR')">High resistance</button>
+      </div>
+    </div>
+
+    <div class="formula" id="form-ohm">
+      <span class="nm">V = I × R</span><br>
+      I = V ÷ R &nbsp; (current in amperes)<br>
+      R = V ÷ I &nbsp; (resistance in ohms)<br>
+      P = V × I &nbsp; (power in watts)
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" onclick="resetScene('ohm')">↺ Reset scene</button>
+      <button class="btn primary" onclick="toggleFormula('ohm')">∑ Show formulas</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SCENE 4: METER PLACEMENT QUIZ                          -->
+<!-- ====================================================== -->
+<section class="panel" id="panel-quiz">
+  <div class="card">
+    <div class="intro" id="intro-quiz">
+      <button class="close-x" onclick="dismissIntro('quiz')">×</button>
+      <h4>🎯 What you'll explore</h4>
+      <p>Drag the <strong>Ammeter</strong> and <strong>Voltmeter</strong> tiles onto the two empty slots. Get it wrong and you'll see what happens in a real circuit.</p>
+    </div>
+    <canvas id="cv-quiz" width="700" height="380"></canvas>
+    <div class="drag-controls">
+      <div class="drag-tile" draggable="true" data-meter="A" id="tile-A">
+        <span style="font-size:1.3rem">Ⓐ</span><span>Ammeter</span>
+      </div>
+      <div class="drag-tile" draggable="true" data-meter="V" id="tile-V">
+        <span style="font-size:1.3rem">Ⓥ</span><span>Voltmeter</span>
+      </div>
+    </div>
+    <div class="quiz-status" id="quiz-status">Drag both meters onto the empty slots in the circuit.</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">📖</span> The two rules</h3>
+    <div class="observe">
+      <ul>
+        <li><strong>Ammeter</strong> — measures current. Has <em>near-zero</em> resistance, so it must go <strong>in series</strong> with the component (in the main loop).</li>
+        <li><strong>Voltmeter</strong> — measures potential difference. Has <em>very high</em> resistance, so it must go <strong>in parallel</strong>, across the two ends of the component.</li>
+      </ul>
+      <h4>Why it matters</h4>
+      <ul>
+        <li>Ammeter in parallel = a short circuit. Huge current flows and the ammeter (or wire) burns out.</li>
+        <li>Voltmeter in series = it chokes the circuit; the bulb stays dark and the voltmeter just reads the battery voltage.</li>
+      </ul>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" onclick="resetScene('quiz')">↺ Reset placements</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SCENE 5: WATER ANALOGY                                 -->
+<!-- ====================================================== -->
+<section class="panel" id="panel-water">
+  <div class="card">
+    <div class="intro" id="intro-water">
+      <button class="close-x" onclick="dismissIntro('water')">×</button>
+      <h4>💧 What you'll explore</h4>
+      <p>The battery is a <strong>water tower</strong>. Each drop carries a fixed amount of energy when it leaves the top. Drop <strong>colour</strong> = energy each drop still has (= PD). Drop <strong>count per second</strong> = current. At a junction, current splits — but energy per drop does NOT.</p>
+    </div>
+    <canvas id="cv-water" width="700" height="420"></canvas>
+    <div class="observe">
+      <h4>👀 What to watch</h4>
+      <ul>
+        <li>At the same <strong>height</strong> in any branch, the drops are the <strong>same colour</strong> — same PD per charge regardless of branch.</li>
+        <li>In <strong>series</strong>: each drop dims a little at every waterwheel it passes (energy splits across the wheels).</li>
+        <li>In <strong>parallel</strong>: each branch handles its <em>own</em> drops — a wheel only sees the drops in its branch, but each of those drops gives up its <em>full</em> energy in that wheel.</li>
+        <li>Drop density (how many per second) = current. Watch the trunk pipe before the split — it's denser than each branch after the split.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">🎛️</span> Controls</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Mode</span>
+        <span class="stepper" style="background:transparent;border:none">
+          <button id="w-mode-s" class="btn primary" style="padding:5px 12px;border-radius:6px;margin-right:4px" onclick="setWaterMode('series')">Series</button>
+          <button id="w-mode-p" class="btn" style="padding:5px 12px;border-radius:6px" onclick="setWaterMode('parallel')">Parallel</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Tower height = battery voltage</span><span class="val" id="r-w-V">9.0 V</span></div>
+      <input type="range" id="w-V" min="3" max="12" step="0.5" value="9">
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span id="w-N-label">Waterwheels in line</span>
+        <span class="stepper">
+          <button onclick="changeNW(-1)">−</button>
+          <span class="num" id="r-w-N">2</span>
+          <button onclick="changeNW(1)">+</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="readouts">
+      <div class="readout"><div class="k">Drops per branch</div><div class="v" id="r-w-Ib">— A</div></div>
+      <div class="readout good"><div class="k">Total from tower</div><div class="v" id="r-w-It">— A</div></div>
+    </div>
+
+    <div class="readouts">
+      <div class="readout warn"><div class="k">Energy lost per drop, per wheel</div><div class="v" id="r-w-Vw">— V</div></div>
+      <div class="readout"><div class="k">Energy carried at start</div><div class="v" id="r-w-Vs">9.0 V</div></div>
+    </div>
+
+    <div class="presets">
+      <div class="lbl">Try a preset:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="applyPreset('water','single')">1 wheel only</button>
+        <button class="chip-btn" onclick="applyPreset('water','split3')">3-way split</button>
+        <button class="chip-btn" onclick="applyPreset('water','tower')">Tall tower (12 V)</button>
+      </div>
+    </div>
+
+    <div class="formula" id="form-water">
+      <strong>Series</strong> (one pipe, N wheels in a row):<br>
+      Current = pressure ÷ (N × wheel size)<br>
+      Each drop loses <span class="nm">1/N</span> of its energy at each wheel.<br><br>
+      <strong>Parallel</strong> (N pipes, 1 wheel each):<br>
+      Current per branch = pressure ÷ wheel size<br>
+      Total current = N × (per-branch current)<br>
+      Each drop loses <span class="nm">ALL</span> its energy in the one wheel it passes.
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" onclick="resetScene('water')">↺ Reset scene</button>
+      <button class="btn primary" onclick="toggleFormula('water')">∑ Show formulas</button>
+    </div>
+  </div>
+</section>
+
+</div><!--/app-->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   GLOBAL STATE
+   ========================================================= */
+const R_BULB = 4;                   // ohms, per identical bulb (fixed model)
+const P_MAX_BULB = 9;               // watts at which halo is saturated
+const INTRO_KEY = 'ch13_intros_v1';
+const STATE_KEY = 'ch13_state_v1';
+
+const state = {
+  introDismissed: {series:false, parallel:false, ohm:false, quiz:false, water:false},
+  series:   {V:6,  N:2, Rext:0},
+  parallel: {V:6,  N:2, blown:[false,false,false]},
+  ohm:      {V:12, R:10},
+  quiz:     {slotA:null, slotB:null},   // slotA = series slot, slotB = parallel slot
+  water:    {mode:'parallel', V:9, N:2}  // N = wheels in series OR branches in parallel
+};
+
+try{
+  const saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
+  if(saved && saved.introDismissed){ state.introDismissed = {...state.introDismissed, ...saved.introDismissed}; }
+}catch(_){}
+
+function persist(){ try{ localStorage.setItem(STATE_KEY, JSON.stringify({introDismissed:state.introDismissed})); }catch(_){} }
+
+/* =========================================================
+   TAB SWITCHING
+   ========================================================= */
+let activeTab = 'series';
+function switchTab(name){
+  activeTab = name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id===`panel-${name}`));
+  // After the browser re-lays out the now-visible panel, re-fit the canvas
+  // (canvases inside display:none panels have a 0x0 bounding rect on first load).
+  requestAnimationFrame(()=>{ requestAnimationFrame(setupCanvases); });
+}
+
+/* =========================================================
+   INTRO CARDS
+   ========================================================= */
+function applyIntroVisibility(){
+  Object.keys(state.introDismissed).forEach(k=>{
+    const el = document.getElementById(`intro-${k}`);
+    if(el) el.style.display = state.introDismissed[k] ? 'none' : '';
+  });
+}
+function dismissIntro(key){
+  state.introDismissed[key] = true;
+  persist();
+  applyIntroVisibility();
+}
+applyIntroVisibility();
+
+/* =========================================================
+   FORMULA TOGGLES
+   ========================================================= */
+function toggleFormula(name){
+  const el = document.getElementById(`form-${name}`);
+  el.classList.toggle('shown');
+}
+
+/* =========================================================
+   RESET SCENE
+   ========================================================= */
+function resetScene(name){
+  if(name==='series'){ state.series = {V:6,N:2,Rext:0}; bindSeries(); }
+  if(name==='parallel'){ state.parallel = {V:6,N:2,blown:[false,false,false]}; bindParallel(); }
+  if(name==='ohm'){ state.ohm = {V:12,R:10}; bindOhm(); }
+  if(name==='quiz'){ state.quiz = {slotA:null, slotB:null}; document.querySelectorAll('.drag-tile').forEach(t=>t.classList.remove('placed')); document.getElementById('quiz-status').textContent='Drag both meters onto the empty slots in the circuit.'; document.getElementById('quiz-status').classList.remove('win'); }
+  if(name==='water'){ state.water = {mode:'parallel', V:9, N:2}; waterDrops.length = 0; bindWater(); }
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+let toastTimer = null;
+function toast(msg, kind='error', ms=2400){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, ms);
+}
+
+/* =========================================================
+   COMMON CANVAS HELPERS
+   ========================================================= */
+// Use the canvas's intrinsic width/height as a fixed virtual coordinate system.
+// CSS `width:100%; height:auto` scales the displayed canvas to fit the column
+// while preserving aspect ratio. All draw code reads ctx.canvas.width / .height
+// (never clientWidth/clientHeight), so it works regardless of panel visibility.
+function fitCanvas(cv){
+  return cv.getContext('2d');
+}
+
+function drawBoxedLabel(ctx, x, y, text, color='#FAD53C', align='center'){
+  ctx.font = 'bold 11px "JetBrains Mono", Consolas, monospace';
+  const w = ctx.measureText(text).width + 14;
+  const h = 20;
+  let bx = x - w/2;
+  if(align==='left') bx = x;
+  else if(align==='right') bx = x - w;
+  ctx.fillStyle = 'rgba(10,14,39,0.92)';
+  ctx.fillRect(bx, y-h/2, w, h);
+  ctx.strokeStyle = color; ctx.lineWidth = 1.2;
+  ctx.strokeRect(bx, y-h/2, w, h);
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx+7, y);
+}
+
+/* Battery symbol */
+function drawBattery(ctx, x, y, label){
+  ctx.strokeStyle = '#00D8FC'; ctx.lineWidth = 2;
+  // long line (+)
+  ctx.beginPath(); ctx.moveTo(x, y-14); ctx.lineTo(x, y+14); ctx.stroke();
+  // short line (-)
+  ctx.beginPath(); ctx.moveTo(x+8, y-8); ctx.lineTo(x+8, y+8); ctx.stroke();
+  // second cell
+  ctx.beginPath(); ctx.moveTo(x+16, y-14); ctx.lineTo(x+16, y+14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+24, y-8); ctx.lineTo(x+24, y+8); ctx.stroke();
+  if(label){ drawBoxedLabel(ctx, x+12, y-32, label, '#00D8FC', 'center'); }
+}
+
+/* Bulb with glow halo */
+function drawBulb(ctx, x, y, brightness, label, blown=false){
+  // halo
+  if(!blown && brightness>0.01){
+    const g = ctx.createRadialGradient(x,y,4, x,y,60*Math.min(1,brightness));
+    g.addColorStop(0, `rgba(250,213,60,${Math.min(0.9,brightness)})`);
+    g.addColorStop(0.4, `rgba(255,111,0,${Math.min(0.5,brightness*0.6)})`);
+    g.addColorStop(1, 'rgba(250,213,60,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,60*Math.min(1,brightness),0,Math.PI*2); ctx.fill();
+  }
+  // bulb body
+  ctx.strokeStyle = blown ? '#6c7da6' : '#00D8FC';
+  ctx.fillStyle = blown ? '#1a1a3e' : '#13183a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // X inside
+  ctx.beginPath();
+  ctx.moveTo(x-9,y-9); ctx.lineTo(x+9,y+9);
+  ctx.moveTo(x-9,y+9); ctx.lineTo(x+9,y-9);
+  ctx.stroke();
+  // blown indicator
+  if(blown){
+    ctx.fillStyle = '#EF5350'; ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('✕', x, y-22);
+  }
+  if(label){ drawBoxedLabel(ctx, x, y+30, label, blown?'#EF5350':'#FAD53C', 'center'); }
+}
+
+/* Resistor symbol */
+function drawResistor(ctx, x, y, label){
+  ctx.strokeStyle = '#00D8FC'; ctx.fillStyle='#13183a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.rect(x-22, y-9, 44, 18); ctx.fill(); ctx.stroke();
+  if(label){ drawBoxedLabel(ctx, x, y+24, label, '#00D8FC', 'center'); }
+}
+
+/* Meter symbol */
+function drawMeter(ctx, x, y, letter, color='#00D8FC'){
+  ctx.strokeStyle = color; ctx.fillStyle='#13183a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.font = 'bold 14px "Open Sans", sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(letter, x, y);
+}
+
+/* Wire */
+function wire(ctx, x1,y1,x2,y2){
+  ctx.strokeStyle = '#00D8FC'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+
+/* =========================================================
+   CURRENT-FLOW ANIMATION (shared phase)
+   ========================================================= */
+let animPhase = 0;
+function drawFlowDots(ctx, pathPts, current, speed){
+  // pathPts = array of {x,y} polyline; dots spaced along it
+  if(current < 0.001 || pathPts.length < 2) return;
+  // total path length
+  let segLens = [], total = 0;
+  for(let i=1;i<pathPts.length;i++){
+    const dx = pathPts[i].x - pathPts[i-1].x;
+    const dy = pathPts[i].y - pathPts[i-1].y;
+    const L = Math.hypot(dx,dy);
+    segLens.push(L); total += L;
+  }
+  const spacing = 36;
+  const nDots = Math.max(3, Math.floor(total/spacing));
+  const dotSize = 3 + Math.min(3, current*0.8);
+  for(let k=0;k<nDots;k++){
+    let s = ((k/nDots) * total + animPhase*speed) % total;
+    if(s<0) s += total;
+    // find segment
+    let acc = 0;
+    for(let i=0;i<segLens.length;i++){
+      if(s < acc + segLens[i]){
+        const t = (s - acc) / segLens[i];
+        const x = pathPts[i].x + t*(pathPts[i+1].x - pathPts[i].x);
+        const y = pathPts[i].y + t*(pathPts[i+1].y - pathPts[i].y);
+        // glowing dot
+        const g = ctx.createRadialGradient(x,y,0,x,y,dotSize*2.5);
+        g.addColorStop(0, 'rgba(250,213,60,0.95)');
+        g.addColorStop(0.5, 'rgba(255,111,0,0.6)');
+        g.addColorStop(1, 'rgba(250,213,60,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x,y,dotSize*2.5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FAD53C';
+        ctx.beginPath(); ctx.arc(x,y,dotSize,0,Math.PI*2); ctx.fill();
+        break;
+      }
+      acc += segLens[i];
+    }
+  }
+}
+
+/* =========================================================
+   SCENE 1: SERIES
+   ========================================================= */
+function computeSeries(){
+  const {V,N,Rext} = state.series;
+  const Rt = N*R_BULB + Rext;
+  const I = Rt>0 ? V/Rt : 0;
+  const Vb = I * R_BULB;
+  const Pb = I*I * R_BULB;
+  return {Rt, I, Vb, Pb};
+}
+function drawSeries(ctx){
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const {N,Rext,V} = state.series;
+  const {Rt,I,Vb,Pb} = computeSeries();
+
+  // Geometry: top loop with bulbs, battery on left
+  const topY = h*0.32, botY = h*0.78;
+  const leftX = 80, rightX = w-60;
+  // Battery
+  drawBattery(ctx, leftX-4, (topY+botY)/2, `${V.toFixed(1)} V`);
+
+  // wires
+  wire(ctx, leftX+8, topY, leftX+8, (topY+botY)/2 - 14);    // left vertical up to battery top
+  wire(ctx, leftX+8, (topY+botY)/2 + 14, leftX+8, botY);     // left vertical down to battery bottom
+  wire(ctx, leftX+8, topY, rightX, topY);                    // top wire
+  wire(ctx, leftX+8, botY, rightX, botY);                    // bottom wire
+  wire(ctx, rightX, topY, rightX, botY);                     // right vertical
+
+  // Bulbs evenly spaced on top wire
+  const spaceX = rightX - (leftX+50);
+  const bulbXs = [];
+  for(let i=0;i<N;i++){
+    const x = (leftX+50) + spaceX*((i+0.5)/N);
+    const halo = Math.max(0, Math.min(1, Pb/P_MAX_BULB));
+    bulbXs.push(x);
+    drawBulb(ctx, x, topY, halo, `B${i+1}: ${Vb.toFixed(2)}V`);
+  }
+  // Optional resistor on bottom wire
+  if(Rext > 0){
+    drawResistor(ctx, (leftX+rightX)/2, botY, `${Rext} Ω`);
+  }
+
+  // Current arrow + label
+  ctx.fillStyle = '#FAD53C'; ctx.font='bold 11px sans-serif';
+  drawBoxedLabel(ctx, (leftX+rightX)/2, topY-40, `I = ${I.toFixed(3)} A (same everywhere)`, '#FAD53C', 'center');
+
+  // Flow dots — clockwise loop
+  const path = [
+    {x:leftX+8, y:(topY+botY)/2 - 14},
+    {x:leftX+8, y:topY},
+    {x:rightX,  y:topY},
+    {x:rightX,  y:botY},
+    {x:leftX+8, y:botY},
+    {x:leftX+8, y:(topY+botY)/2 + 14}
+  ];
+  drawFlowDots(ctx, path, I, 0.8 + I*1.5);
+}
+
+function bindSeries(){
+  document.getElementById('s-V').value = state.series.V;
+  document.getElementById('s-R').value = state.series.Rext;
+  updateSeriesReadouts();
+}
+function updateSeriesReadouts(){
+  const {V,N,Rext} = state.series;
+  const {Rt,I,Vb,Pb} = computeSeries();
+  document.getElementById('r-s-V').textContent = V.toFixed(1)+' V';
+  document.getElementById('r-s-R').textContent = Rext+' Ω';
+  document.getElementById('r-s-N').textContent = N;
+  document.getElementById('r-s-Rt').textContent = Rt+' Ω';
+  document.getElementById('r-s-I').textContent = I.toFixed(3)+' A';
+  // bulb list
+  const list = document.getElementById('r-s-bulbs');
+  list.innerHTML = '';
+  for(let i=0;i<N;i++){
+    const div = document.createElement('div');
+    div.className='row';
+    div.innerHTML = `<span class="name">Bulb ${i+1}</span><span class="nums">${Vb.toFixed(2)} V · ${Pb.toFixed(2)} W</span>`;
+    list.appendChild(div);
+  }
+}
+document.getElementById('s-V').addEventListener('input', e=>{ state.series.V = parseFloat(e.target.value); updateSeriesReadouts(); });
+document.getElementById('s-R').addEventListener('input', e=>{ state.series.Rext = parseInt(e.target.value); updateSeriesReadouts(); });
+function changeNS(d){
+  state.series.N = Math.max(1, Math.min(3, state.series.N + d));
+  updateSeriesReadouts();
+}
+
+/* =========================================================
+   SCENE 2: PARALLEL
+   ========================================================= */
+function computeParallel(){
+  const {V,N,blown} = state.parallel;
+  let Itot = 0;
+  const branchI = [];
+  for(let i=0;i<N;i++){
+    if(blown[i]){ branchI.push(0); }
+    else { const I = V/R_BULB; branchI.push(I); Itot += I; }
+  }
+  const Pb = (V*V)/R_BULB;
+  return {Itot, branchI, Pb};
+}
+function drawParallel(ctx){
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const {N,V,blown} = state.parallel;
+  const {Itot, branchI, Pb} = computeParallel();
+
+  const topY = h*0.18, botY = h*0.82;
+  const leftX = 80, rightX = w-60;
+
+  // battery on left rail
+  drawBattery(ctx, leftX-4, (topY+botY)/2, `${V.toFixed(1)} V`);
+  // left rail
+  wire(ctx, leftX+8, topY, leftX+8, (topY+botY)/2 - 14);
+  wire(ctx, leftX+8, (topY+botY)/2 + 14, leftX+8, botY);
+  // top rail
+  wire(ctx, leftX+8, topY, rightX, topY);
+  // bottom rail
+  wire(ctx, leftX+8, botY, rightX, botY);
+  // right rail
+  wire(ctx, rightX, topY, rightX, botY);
+
+  // each branch — vertical wire with bulb in middle
+  const spaceX = rightX - (leftX+60);
+  bulbCenters = []; // store for clicking
+  for(let i=0;i<N;i++){
+    const x = (leftX+60) + spaceX*((i+0.5)/N);
+    const midY = (topY+botY)/2;
+    wire(ctx, x, topY, x, midY-18);
+    wire(ctx, x, midY+18, x, botY);
+    const halo = blown[i] ? 0 : Math.max(0, Math.min(1, Pb/P_MAX_BULB));
+    drawBulb(ctx, x, midY, halo, `${blown[i]?'BLOWN':branchI[i].toFixed(2)+' A'}`, blown[i]);
+    bulbCenters.push({x, y:midY, idx:i});
+  }
+
+  // Total current label
+  drawBoxedLabel(ctx, leftX+50, topY-12, `I_total = ${Itot.toFixed(2)} A`, '#FAD53C', 'left');
+
+  // flow dots on rails (only if any current)
+  if(Itot > 0.001){
+    const railPath = [
+      {x:leftX+8, y:(topY+botY)/2 - 14},
+      {x:leftX+8, y:topY},
+      {x:rightX,  y:topY},
+      {x:rightX,  y:botY},
+      {x:leftX+8, y:botY},
+      {x:leftX+8, y:(topY+botY)/2 + 14}
+    ];
+    drawFlowDots(ctx, railPath, Itot, 0.6 + Itot*0.4);
+  }
+}
+let bulbCenters = [];
+
+document.getElementById('cv-parallel').addEventListener('click', e=>{
+  const cv = e.currentTarget;
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX-rect.left), y = (e.clientY-rect.top);
+  for(const b of bulbCenters){
+    if(Math.hypot(b.x-x, b.y-y) < 18){
+      state.parallel.blown[b.idx] = !state.parallel.blown[b.idx];
+      updateParallelReadouts();
+      return;
+    }
+  }
+});
+
+function bindParallel(){
+  document.getElementById('p-V').value = state.parallel.V;
+  updateParallelReadouts();
+}
+function updateParallelReadouts(){
+  const {V,N,blown} = state.parallel;
+  const {Itot, branchI, Pb} = computeParallel();
+  document.getElementById('r-p-V').textContent = V.toFixed(1)+' V';
+  document.getElementById('r-p-N').textContent = N;
+  document.getElementById('r-p-Vb').textContent = V.toFixed(1)+' V';
+  document.getElementById('r-p-It').textContent = Itot.toFixed(2)+' A';
+  const list = document.getElementById('r-p-bulbs');
+  list.innerHTML = '';
+  for(let i=0;i<N;i++){
+    const div = document.createElement('div');
+    div.className = 'row' + (blown[i]?' blown':'');
+    const txt = blown[i] ? 'BLOWN — branch open' : `${V.toFixed(1)} V · ${branchI[i].toFixed(2)} A · ${Pb.toFixed(2)} W`;
+    div.innerHTML = `<span class="name">Branch ${i+1}</span><span class="nums">${txt}</span>`;
+    list.appendChild(div);
+  }
+}
+document.getElementById('p-V').addEventListener('input', e=>{ state.parallel.V = parseFloat(e.target.value); updateParallelReadouts(); });
+function changeNP(d){
+  state.parallel.N = Math.max(1, Math.min(3, state.parallel.N + d));
+  // keep blown[] length 3
+  updateParallelReadouts();
+}
+
+/* =========================================================
+   SCENE 3: OHM'S LAW
+   ========================================================= */
+function drawOhm(ctx){
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const {V,R} = state.ohm;
+  const I = R>0 ? V/R : 0;
+
+  // Left half: tiny circuit
+  // right half: locked I-vs-V graph
+  const halfX = w*0.42;
+
+  // ===== Circuit (left) =====
+  const cx = halfX*0.5;
+  const topY = h*0.28, botY = h*0.72;
+  drawBattery(ctx, cx-50, (topY+botY)/2, `${V.toFixed(1)} V`);
+  wire(ctx, cx-42, topY, cx-42, (topY+botY)/2 - 14);
+  wire(ctx, cx-42, (topY+botY)/2 + 14, cx-42, botY);
+  wire(ctx, cx-42, topY, cx+50, topY);
+  wire(ctx, cx-42, botY, cx+50, botY);
+  wire(ctx, cx+50, topY, cx+50, botY);
+  drawResistor(ctx, cx+50, (topY+botY)/2, `${R} Ω`);
+
+  const path = [
+    {x:cx-42, y:(topY+botY)/2 - 14},
+    {x:cx-42, y:topY},
+    {x:cx+50, y:topY},
+    {x:cx+50, y:botY},
+    {x:cx-42, y:botY},
+    {x:cx-42, y:(topY+botY)/2 + 14}
+  ];
+  drawFlowDots(ctx, path, I, 0.6 + I*0.5);
+
+  drawBoxedLabel(ctx, cx+4, topY-26, `I = ${I.toFixed(3)} A`, '#FAD53C', 'center');
+
+  // ===== Graph (right) =====
+  // Locked axes: V on x [0..24], I on y [0..3]
+  const MAX_V = 24, MAX_I = 3;
+  const padL = halfX + 50, padR = 18, padT = 36, padB = 38;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+  // Background
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  ctx.fillRect(padL, padT, plotW, plotH);
+  // Gridlines
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let g=1; g<6; g++){ // y gridlines (every 0.5 A)
+    const y = padT + plotH - (g*0.5/MAX_I)*plotH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+  }
+  for(let g=1; g<=6; g++){ // x gridlines (every 4 V)
+    const x = padL + (g*4/MAX_V)*plotW;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
+  }
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL, padT+plotH);
+  ctx.lineTo(padL+plotW, padT+plotH);
+  ctx.stroke();
+  // Axis labels
+  ctx.fillStyle = '#9fb1d6'; ctx.font='10px "JetBrains Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let g=0; g<=6; g++){
+    const x = padL + (g*4/MAX_V)*plotW;
+    ctx.fillText(`${g*4}`, x, padT+plotH+4);
+  }
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let g=0; g<=6; g++){
+    const y = padT + plotH - (g*0.5/MAX_I)*plotH;
+    ctx.fillText(`${(g*0.5).toFixed(1)}`, padL-6, y);
+  }
+  // Axis titles
+  ctx.fillStyle = '#00D8FC'; ctx.font='bold 11px "Open Sans", sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('Voltage V (V)', padL+plotW/2, padT+plotH+18);
+  ctx.save();
+  ctx.translate(padL-32, padT+plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.fillText('Current I (A)', 0, 0);
+  ctx.restore();
+
+  // Plot the I = V/R line for current R: starts at (0,0), ends at (min(MAX_V, R*MAX_I), ...)
+  // Find where line exits the plot box
+  const x2V = Math.min(MAX_V, R * MAX_I); // V where I would hit MAX_I
+  const y2I = x2V / R;
+  ctx.strokeStyle = '#FAD53C'; ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT+plotH); // origin
+  ctx.lineTo(padL + (x2V/MAX_V)*plotW, padT + plotH - (y2I/MAX_I)*plotH);
+  ctx.stroke();
+
+  // Operating point
+  const opV = Math.min(MAX_V, V);
+  const opI = Math.min(MAX_I, I);
+  const px = padL + (opV/MAX_V)*plotW;
+  const py = padT + plotH - (opI/MAX_I)*plotH;
+  // dotted guide lines
+  ctx.strokeStyle = 'rgba(0,216,252,0.55)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(px, padT+plotH); ctx.lineTo(px, py); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(padL, py); ctx.lineTo(px, py); ctx.stroke();
+  ctx.setLineDash([]);
+  // marker
+  ctx.fillStyle = '#00D8FC';
+  ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // line label "slope = 1/R"
+  drawBoxedLabel(ctx, padL+plotW-8, padT+18, `slope = 1/R`, '#FAD53C', 'right');
+}
+
+function bindOhm(){
+  document.getElementById('o-V').value = state.ohm.V;
+  document.getElementById('o-R').value = state.ohm.R;
+  updateOhmReadouts();
+}
+function updateOhmReadouts(){
+  const {V,R} = state.ohm;
+  const I = R>0 ? V/R : 0;
+  const P = V*I;
+  document.getElementById('r-o-V').textContent = V.toFixed(1)+' V';
+  document.getElementById('r-o-R').textContent = R+' Ω';
+  document.getElementById('r-o-I').textContent = I.toFixed(3)+' A';
+  document.getElementById('r-o-P').textContent = P.toFixed(2)+' W';
+}
+document.getElementById('o-V').addEventListener('input', e=>{ state.ohm.V = parseFloat(e.target.value); updateOhmReadouts(); });
+document.getElementById('o-R').addEventListener('input', e=>{ state.ohm.R = parseInt(e.target.value); updateOhmReadouts(); });
+
+/* =========================================================
+   SCENE 4: METER PLACEMENT QUIZ
+   ========================================================= */
+let quizSlots = []; // [{x,y, kind:'series'|'parallel', filled:null|'A'|'V'}]
+
+function drawQuiz(ctx){
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const topY = h*0.30, botY = h*0.74;
+  const leftX = 90, rightX = w-90;
+
+  // battery
+  drawBattery(ctx, leftX-4, (topY+botY)/2, `9 V`);
+  // left rail
+  wire(ctx, leftX+8, topY, leftX+8, (topY+botY)/2 - 14);
+  wire(ctx, leftX+8, (topY+botY)/2 + 14, leftX+8, botY);
+  // top wire with series slot (slotA) in middle
+  const seriesSlotX = (leftX+8 + rightX)/2 - 60;
+  wire(ctx, leftX+8, topY, seriesSlotX-22, topY);
+  // gap for series slot
+  wire(ctx, seriesSlotX+22, topY, rightX, topY);
+  // bulb on right
+  const bulbX = rightX - 40;
+  drawBulb(ctx, bulbX, (topY+botY)/2, state.quiz.slotA==='A' ? 0.6 : 0, 'Bulb');
+  // wires from top right corner down to bulb
+  wire(ctx, rightX, topY, rightX, (topY+botY)/2);
+  wire(ctx, rightX, (topY+botY)/2, bulbX+14, (topY+botY)/2);
+  // wire from bulb to bottom
+  wire(ctx, bulbX-14, (topY+botY)/2, leftX+8, (topY+botY)/2);
+  wire(ctx, leftX+8, (topY+botY)/2, leftX+8, botY); // already drawn, but ensure
+  // bottom wire (return path is via left rail now)
+  // parallel slot (slotB) — across the bulb
+  const parSlotY = (topY+botY)/2 + 70;
+  wire(ctx, bulbX+14, (topY+botY)/2, bulbX+14, parSlotY-16);
+  wire(ctx, bulbX-14, (topY+botY)/2, bulbX-14, parSlotY-16);
+  // gap for parallel slot drawn below
+  wire(ctx, bulbX-14, parSlotY+16, bulbX-14, parSlotY+30);
+  wire(ctx, bulbX+14, parSlotY+16, bulbX+14, parSlotY+30);
+  wire(ctx, bulbX-14, parSlotY+30, bulbX+14, parSlotY+30);
+
+  // slotA (series, on top wire)
+  const slotAx = seriesSlotX, slotAy = topY;
+  const slotBx = bulbX,        slotBy = parSlotY;
+  quizSlots = [
+    {key:'A', x:slotAx, y:slotAy, w:44, h:44, kind:'series'},
+    {key:'B', x:slotBx, y:slotBy, w:44, h:44, kind:'parallel'}
+  ];
+
+  // Slot A draw
+  if(!state.quiz.slotA){
+    ctx.strokeStyle = '#FF6F00'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+    ctx.strokeRect(slotAx-22, slotAy-22, 44, 44);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#FF6F00'; ctx.font='bold 10px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('SLOT A', slotAx, slotAy-32);
+    ctx.fillText('(in series)', slotAx, slotAy+32);
+  } else {
+    drawMeter(ctx, slotAx, slotAy, state.quiz.slotA, state.quiz.slotA==='A'?'#66BB6A':'#EF5350');
+  }
+  // Slot B draw
+  if(!state.quiz.slotB){
+    ctx.strokeStyle = '#FF6F00'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+    ctx.strokeRect(slotBx-22, slotBy-22, 44, 44);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#FF6F00'; ctx.font='bold 10px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('SLOT B', slotBx, slotBy-32);
+    ctx.fillText('(across bulb)', slotBx, slotBy+32);
+  } else {
+    drawMeter(ctx, slotBx, slotBy, state.quiz.slotB, state.quiz.slotB==='V'?'#66BB6A':'#EF5350');
+  }
+}
+
+// Drag and drop
+let dragging = null;
+document.querySelectorAll('.drag-tile').forEach(tile=>{
+  tile.addEventListener('dragstart', e=>{
+    dragging = tile.dataset.meter;
+    tile.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', dragging);
+    e.dataTransfer.effectAllowed='move';
+  });
+  tile.addEventListener('dragend', ()=>{ tile.classList.remove('dragging'); });
+  // touch fallback: tap to pick
+  tile.addEventListener('click', ()=>{
+    if(tile.classList.contains('placed')) return;
+    dragging = tile.dataset.meter;
+    toast(`Now tap a slot on the circuit to drop the ${dragging==='A'?'Ammeter':'Voltmeter'}.`, 'success', 1600);
+  });
+});
+
+const cvQuiz = document.getElementById('cv-quiz');
+cvQuiz.addEventListener('dragover', e=>e.preventDefault());
+cvQuiz.addEventListener('drop', e=>{
+  e.preventDefault();
+  handleDrop(e);
+});
+cvQuiz.addEventListener('click', e=>{
+  if(!dragging) return;
+  handleDrop(e);
+});
+
+function handleDrop(e){
+  const rect = cvQuiz.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  for(const slot of quizSlots){
+    if(x > slot.x - slot.w/2 && x < slot.x + slot.w/2 && y > slot.y - slot.h/2 && y < slot.y + slot.h/2){
+      placeMeter(slot.key, dragging, slot.kind);
+      dragging = null;
+      return;
+    }
+  }
+}
+
+function placeMeter(slotKey, meterType, slotKind){
+  // Correct placement rules:
+  // - Ammeter (A) → series slot
+  // - Voltmeter (V) → parallel slot
+  if(meterType==='A' && slotKind==='parallel'){
+    toast('⚠ Ammeter in parallel = near-zero resistance across the battery → SHORT CIRCUIT. Ammeter would burn out!', 'error', 3000);
+    return;
+  }
+  if(meterType==='V' && slotKind==='series'){
+    toast('⚠ Voltmeter in series chokes the loop (very high resistance). Bulb stays dark and reading ≈ battery voltage.', 'error', 3000);
+    return;
+  }
+  // Correct
+  state.quiz['slot'+slotKey] = meterType;
+  // mark tile as placed
+  const tile = document.querySelector(`.drag-tile[data-meter="${meterType}"]`);
+  if(tile) tile.classList.add('placed');
+  // status
+  if(state.quiz.slotA && state.quiz.slotB){
+    document.getElementById('quiz-status').textContent = '✓ Both meters placed correctly. Bulb lights up; ammeter reads the loop current; voltmeter reads the bulb voltage.';
+    document.getElementById('quiz-status').classList.add('win');
+    toast('🎉 Correct! Ammeter in series, voltmeter in parallel.', 'success', 2200);
+  } else {
+    document.getElementById('quiz-status').textContent = `✓ ${meterType==='A'?'Ammeter':'Voltmeter'} placed. Now drop the other meter.`;
+  }
+}
+
+/* =========================================================
+   SCENE 5: WATER ANALOGY
+   =========================================================
+   Pedagogy:
+   - Drop COLOUR = energy each drop still carries (= PD at that point).
+     Same colour at the same height in ANY branch → PD is shared across all
+     parallel paths, not "split".
+   - Drop COUNT per second = current.
+     The trunk pipe (before the split) carries the sum; each branch carries
+     less; sum equals trunk on the other side of the junction.
+   - Series: drops pass through every wheel and lose energy in stages.
+   - Parallel: each drop only goes through ONE wheel and loses ALL its energy
+     there. Branches don't "share" the voltage.
+*/
+
+const WHEEL_R = 4; // ohms per wheel (kept constant; the slider varies V and N)
+const waterDrops = []; // array of {branchIdx, t (0..1 along path), startEnergy:1, endEnergy:0, segPos[]}
+
+// Geometry helpers — recomputed each frame so resize works
+function waterGeom(w, h){
+  const towerTop = 18, towerBot = 60;        // top reservoir y range
+  const drainTop = h - 50, drainBot = h - 18; // bottom reservoir y range
+  const trunkTopY = towerBot;                 // where trunk pipe starts
+  const splitY = h * 0.30;                    // where parallel branches split
+  const recombineY = h - 90;                  // where parallel branches recombine
+  const wheelRadius = 18;
+  const padX = 60;
+  return {towerTop, towerBot, drainTop, drainBot, trunkTopY, splitY, recombineY, wheelRadius, padX,
+          width:w-padX*2, leftX:padX};
+}
+
+// Each drop has a "t" along its path from 0 (top of trunk) to 1 (drain).
+// Energy(t) is computed from how many wheels it's passed.
+function spawnDrops(){
+  const {mode, V, N} = state.water;
+  // Current per branch in arbitrary "drops/frame" units; tuned for visual density
+  const rateUnit = 0.06; // drops/frame at unit current
+  if(mode==='series'){
+    // ONE column. Current = V/(N*R)
+    const I = V/(N*WHEEL_R);
+    if(Math.random() < I*rateUnit){
+      waterDrops.push({branchIdx:0, t:0});
+    }
+  } else {
+    // N parallel branches. Current per branch = V/R
+    const Ibr = V/WHEEL_R;
+    for(let b=0;b<N;b++){
+      if(Math.random() < Ibr*rateUnit){
+        waterDrops.push({branchIdx:b, t:0});
+      }
+    }
+  }
+}
+function advanceDrops(){
+  // step drops forward
+  for(let i=waterDrops.length-1;i>=0;i--){
+    waterDrops[i].t += 0.012;
+    if(waterDrops[i].t > 1.05) waterDrops.splice(i,1);
+  }
+}
+
+// Position a drop along its path. Returns {x,y, energyFrac (1..0)}.
+function dropPosition(drop, geom, mode, N){
+  const {trunkTopY, splitY, recombineY, drainTop, leftX, width} = geom;
+  const t = drop.t;
+  const trunkX = leftX + width/2;
+  // Pre-split portion: t in [0, 0.18] -> from trunkTopY to splitY
+  // In-branch portion: t in [0.18, 0.78] -> down through the wheel
+  // Post-merge portion: t in [0.78, 1.0] -> down to drainTop
+  const yTop = trunkTopY, yA = splitY, yB = recombineY, yEnd = drainTop;
+  const sliceA = 0.18, sliceB = 0.78;
+
+  if(mode==='series'){
+    // Single column: drops pass through N wheels evenly spaced from yA to yB
+    let x = trunkX;
+    let y;
+    if(t < sliceA){
+      y = yTop + (yA - yTop) * (t/sliceA);
+    } else if(t < sliceB){
+      y = yA + (yB - yA) * ((t-sliceA)/(sliceB-sliceA));
+    } else {
+      y = yB + (yEnd - yB) * ((t-sliceB)/(1-sliceB));
+    }
+    // Energy: starts at 1, each wheel takes 1/N.
+    // Determine which wheels we've passed.
+    const wheelTs = [];
+    for(let k=0;k<N;k++){
+      // wheel k is at position (k+0.5)/N along the in-branch portion
+      wheelTs.push(sliceA + (sliceB-sliceA) * (k+0.5)/N);
+    }
+    let passed = wheelTs.filter(wt => t > wt).length;
+    let energyFrac = 1 - passed/N;
+    // smooth transition inside each wheel
+    for(const wt of wheelTs){
+      if(t > wt-0.02 && t < wt+0.02){
+        const blend = (t - (wt-0.02))/0.04;
+        energyFrac = (1 - (passed - (t>wt?1:0))/N) - blend*(1/N);
+      }
+    }
+    energyFrac = Math.max(0, Math.min(1, energyFrac));
+    return {x, y, energyFrac};
+  } else {
+    // Parallel: N branches at evenly spaced X
+    const branchSpacing = width / (N+1);
+    const bx = leftX + branchSpacing * (drop.branchIdx + 1);
+    let x, y;
+    if(t < sliceA){
+      // pre-split: drop moves along trunk top → split node, x slides from trunkX → bx
+      const localT = t / sliceA;
+      x = trunkX + (bx - trunkX) * localT;
+      y = yTop + (yA - yTop) * localT;
+    } else if(t < sliceB){
+      // in-branch: straight down
+      x = bx;
+      const localT = (t - sliceA) / (sliceB - sliceA);
+      y = yA + (yB - yA) * localT;
+    } else {
+      // post-merge: x slides back to trunkX
+      const localT = (t - sliceB) / (1 - sliceB);
+      x = bx + (trunkX - bx) * localT;
+      y = yB + (yEnd - yB) * localT;
+    }
+    // Energy: full from yTop to wheel; ALL energy lost at wheel; near-zero after.
+    // Wheel sits at midpoint of in-branch portion: tWheel = (sliceA+sliceB)/2
+    const tWheel = (sliceA + sliceB) / 2;
+    let energyFrac = 1;
+    if(t >= tWheel-0.05 && t <= tWheel+0.05){
+      // transition zone — losing energy at the wheel
+      energyFrac = 1 - (t - (tWheel-0.05)) / 0.10;
+    } else if(t > tWheel+0.05){
+      energyFrac = 0.05; // residual (matches the "near-zero potential" sink colour)
+    }
+    energyFrac = Math.max(0, Math.min(1, energyFrac));
+    return {x, y, energyFrac};
+  }
+}
+
+// Map energy (1..0) → colour. Bright yellow at 1, fading orange→dim grey at 0.
+function energyToColor(f){
+  // hue from 55 (yellow) down to 200 (dim cyan/grey-blue)
+  const h = 55 + (1-f) * 165;
+  const s = 90 - (1-f)*60; // saturation drops as energy goes
+  const l = 60 - (1-f)*40; // lightness fades to dark
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+function drawWaterwheel(ctx, x, y, r, spinPhase, label){
+  // hub
+  ctx.fillStyle = '#13183a';
+  ctx.strokeStyle = '#00D8FC';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // spokes
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(spinPhase);
+  for(let i=0;i<8;i++){
+    ctx.rotate(Math.PI/4);
+    ctx.strokeStyle = 'rgba(0,216,252,0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r-2,0); ctx.stroke();
+    // paddle on tip
+    ctx.fillStyle = '#FF6F00';
+    ctx.fillRect(r-6, -3, 6, 6);
+  }
+  ctx.restore();
+  // hub circle
+  ctx.fillStyle = '#FAD53C';
+  ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  if(label){ drawBoxedLabel(ctx, x, y+r+18, label, '#FAD53C', 'center'); }
+}
+
+function drawWaterPipe(ctx, points, widthPx=12){
+  // points = [{x,y},...]; draws a rounded pipe outline
+  if(points.length < 2) return;
+  ctx.lineCap = 'round'; ctx.lineJoin='round';
+  // outer (border)
+  ctx.strokeStyle = '#2a3170';
+  ctx.lineWidth = widthPx + 4;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.stroke();
+  // inner (lighter fill)
+  ctx.strokeStyle = '#0e1538';
+  ctx.lineWidth = widthPx;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.stroke();
+}
+
+function drawReservoir(ctx, x, y, w, h, label, energyColor){
+  // box
+  ctx.strokeStyle = '#00D8FC'; ctx.lineWidth = 2;
+  ctx.fillStyle = 'rgba(10,16,55,0.7)';
+  ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
+  // water fill with energy colour
+  const g = ctx.createLinearGradient(x, y, x, y+h);
+  g.addColorStop(0, energyColor);
+  g.addColorStop(1, 'rgba(0,80,140,0.7)');
+  ctx.fillStyle = g;
+  ctx.fillRect(x+2, y+4, w-4, h-6);
+  // wavy top edge
+  ctx.strokeStyle = 'rgba(250,213,60,0.6)'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for(let i=0; i<=w; i+=4){
+    const yy = y + 6 + Math.sin((i+animPhase*8)*0.15)*1.5;
+    if(i===0) ctx.moveTo(x+i, yy); else ctx.lineTo(x+i, yy);
+  }
+  ctx.stroke();
+  if(label){
+    ctx.fillStyle = '#fff'; ctx.font='bold 12px "Open Sans", sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(label, x+w/2, y+h/2);
+  }
+}
+
+function drawWater(ctx){
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const geom = waterGeom(w, h);
+  const {mode, V, N} = state.water;
+  const {towerTop, towerBot, drainTop, drainBot, trunkTopY, splitY, recombineY, wheelRadius, leftX, width} = geom;
+
+  // Top reservoir (battery +)
+  drawReservoir(ctx, leftX, towerTop, width, towerBot-towerTop, `+${V.toFixed(1)} V  (high pressure)`, 'rgba(250,213,60,0.55)');
+  // Bottom reservoir (battery −)
+  drawReservoir(ctx, leftX, drainTop, width, drainBot-drainTop, `0 V  (drain)`, 'rgba(120,140,180,0.45)');
+
+  // Pipes
+  const trunkX = leftX + width/2;
+  if(mode==='series'){
+    // single vertical pipe with N waterwheels evenly spaced between splitY and recombineY
+    drawWaterPipe(ctx, [{x:trunkX, y:towerBot},{x:trunkX, y:drainTop}], 14);
+    // Draw waterwheels
+    const I = V/(N*WHEEL_R);
+    const Vw = V/N; // PD across each wheel
+    for(let k=0;k<N;k++){
+      const wt = (k+0.5)/N;
+      const wy = splitY + (recombineY - splitY) * wt;
+      drawWaterwheel(ctx, trunkX, wy, wheelRadius, animPhase*I*1.4, `wheel ${k+1}: drops −${Vw.toFixed(2)} V`);
+    }
+  } else {
+    // N parallel branches
+    const Ibr = V/WHEEL_R;
+    const Itot = N * Ibr;
+    // Pre-split trunk
+    drawWaterPipe(ctx, [{x:trunkX, y:towerBot},{x:trunkX, y:splitY-2}], 14);
+    // Branches
+    const branchSpacing = width / (N+1);
+    for(let b=0;b<N;b++){
+      const bx = leftX + branchSpacing*(b+1);
+      // junction from trunk to branch top
+      drawWaterPipe(ctx, [{x:trunkX, y:splitY},{x:bx, y:splitY}, {x:bx, y:recombineY}, {x:trunkX, y:recombineY}], 11);
+      // wheel
+      const wy = (splitY + recombineY)/2;
+      drawWaterwheel(ctx, bx, wy, wheelRadius-2, animPhase*Ibr*1.4, `branch ${b+1}: −${V.toFixed(1)} V`);
+    }
+    // Post-merge trunk
+    drawWaterPipe(ctx, [{x:trunkX, y:recombineY+2},{x:trunkX, y:drainTop}], 14);
+  }
+
+  // Drops
+  spawnDrops();
+  advanceDrops();
+  for(const d of waterDrops){
+    const pos = dropPosition(d, geom, mode, N);
+    const col = energyToColor(pos.energyFrac);
+    const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 6);
+    glow.addColorStop(0, col);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Labels: pressure arrow + key insight
+  // Left side: vertical "PD scale"
+  const scaleX = leftX - 28;
+  ctx.strokeStyle = 'rgba(250,213,60,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(scaleX, towerBot); ctx.lineTo(scaleX, drainTop); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#FAD53C'; ctx.font = '9px "JetBrains Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let k=0;k<=4;k++){
+    const y = towerBot + (drainTop-towerBot)*(k/4);
+    const lvl = V * (1 - k/4);
+    ctx.fillRect(scaleX-3, y-0.5, 6, 1);
+    ctx.fillText(lvl.toFixed(1)+'V', scaleX-22, y);
+  }
+
+  // Right-side legend
+  const lgX = leftX + width + 12;
+  if(lgX + 40 < w){
+    ctx.fillStyle = 'rgba(10,14,39,0.92)';
+    ctx.strokeStyle = '#FAD53C'; ctx.lineWidth = 1;
+    ctx.fillRect(lgX-4, towerBot-4, 14, drainTop-towerBot+8);
+    ctx.strokeRect(lgX-4, towerBot-4, 14, drainTop-towerBot+8);
+    for(let i=0;i<=20;i++){
+      const frac = 1 - i/20;
+      const y = towerBot + (drainTop-towerBot)*(i/20);
+      ctx.fillStyle = energyToColor(frac);
+      ctx.fillRect(lgX-2, y-0.5, 10, (drainTop-towerBot)/20+1);
+    }
+    ctx.fillStyle = '#fff'; ctx.font = '8px "JetBrains Mono", monospace';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('full', lgX+12, towerBot+4);
+    ctx.fillText('energy', lgX+12, towerBot+14);
+    ctx.fillText('drained', lgX+12, drainTop-4);
+  }
+}
+
+function bindWater(){
+  document.getElementById('w-V').value = state.water.V;
+  // mode buttons styling
+  document.getElementById('w-mode-s').classList.toggle('primary', state.water.mode==='series');
+  document.getElementById('w-mode-p').classList.toggle('primary', state.water.mode==='parallel');
+  document.getElementById('w-N-label').textContent =
+    state.water.mode==='series' ? 'Waterwheels in line (series)' : 'Parallel branches';
+  updateWaterReadouts();
+}
+function updateWaterReadouts(){
+  const {mode, V, N} = state.water;
+  document.getElementById('r-w-V').textContent = V.toFixed(1)+' V';
+  document.getElementById('r-w-N').textContent = N;
+  document.getElementById('r-w-Vs').textContent = V.toFixed(1)+' V';
+  if(mode==='series'){
+    const I = V/(N*WHEEL_R);
+    const Vw = V/N;
+    document.getElementById('r-w-Ib').textContent = I.toFixed(2)+' A';
+    document.getElementById('r-w-It').textContent = I.toFixed(2)+' A';
+    document.getElementById('r-w-Vw').textContent = Vw.toFixed(2)+' V (×'+N+' wheels)';
+  } else {
+    const Ibr = V/WHEEL_R;
+    const Itot = N*Ibr;
+    document.getElementById('r-w-Ib').textContent = Ibr.toFixed(2)+' A';
+    document.getElementById('r-w-It').textContent = Itot.toFixed(2)+' A';
+    document.getElementById('r-w-Vw').textContent = V.toFixed(2)+' V (full drop, 1 wheel)';
+  }
+}
+function setWaterMode(m){
+  state.water.mode = m;
+  waterDrops.length = 0; // clear drops on mode change so we don't see leftover paths
+  bindWater();
+}
+function changeNW(d){
+  state.water.N = Math.max(1, Math.min(3, state.water.N + d));
+  waterDrops.length = 0;
+  updateWaterReadouts();
+}
+document.getElementById('w-V').addEventListener('input', e=>{
+  state.water.V = parseFloat(e.target.value);
+  updateWaterReadouts();
+});
+
+/* =========================================================
+   PRESETS
+   ========================================================= */
+const PRESETS = {
+  series: {
+    one:   ()=>{ state.series={V:6,N:1,Rext:0}; bindSeries(); },
+    three: ()=>{ state.series={V:6,N:3,Rext:0}; bindSeries(); },
+    boost: ()=>{ state.series={V:12,N:2,Rext:0}; bindSeries(); }
+  },
+  parallel: {
+    two:      ()=>{ state.parallel={V:6,N:2,blown:[false,false,false]}; bindParallel(); },
+    blow:     ()=>{ state.parallel={V:6,N:3,blown:[false,true,false]}; bindParallel(); },
+    allfresh: ()=>{ state.parallel={V:6,N:3,blown:[false,false,false]}; bindParallel(); }
+  },
+  ohm: {
+    low:   ()=>{ state.ohm={V:3,R:6};  bindOhm(); },
+    mains: ()=>{ state.ohm={V:24,R:20}; bindOhm(); },
+    highR: ()=>{ state.ohm={V:12,R:80}; bindOhm(); }
+  },
+  water: {
+    single: ()=>{ state.water={mode:'series', V:9, N:1};   waterDrops.length=0; bindWater(); },
+    split3: ()=>{ state.water={mode:'parallel', V:9, N:3}; waterDrops.length=0; bindWater(); },
+    tower:  ()=>{ state.water={mode:'parallel', V:12, N:2}; waterDrops.length=0; bindWater(); }
+  }
+};
+function applyPreset(scene, key){
+  const fn = PRESETS[scene]?.[key];
+  if(fn) fn();
+}
+
+/* =========================================================
+   MAIN RENDER LOOP
+   ========================================================= */
+const ctxs = {};
+function setupCanvases(){
+  ['series','parallel','ohm','quiz','water'].forEach(name=>{
+    ctxs[name] = fitCanvas(document.getElementById(`cv-${name}`));
+  });
+}
+window.addEventListener('resize', ()=>{ setupCanvases(); });
+
+function loop(){
+  animPhase += 0.05;
+  try{
+    if(activeTab==='series')   drawSeries(ctxs.series);
+    if(activeTab==='parallel') drawParallel(ctxs.parallel);
+    if(activeTab==='ohm')      drawOhm(ctxs.ohm);
+    if(activeTab==='quiz')     drawQuiz(ctxs.quiz);
+    if(activeTab==='water')    drawWater(ctxs.water);
+  }catch(e){ console.error('draw error', e); }
+}
+
+// kickoff
+setupCanvases();
+bindSeries(); bindParallel(); bindOhm(); bindWater();
+// setInterval (not requestAnimationFrame) — RAF is throttled in headless
+// preview browsers and in background tabs; setInterval keeps the sim live.
+setInterval(loop, 33); // ~30 fps is plenty for current-flow dots
+</script>
+</body>
+</html>

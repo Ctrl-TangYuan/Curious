@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch 13 — Current Snake Game 🐍</title>
+<style>
+:root{
+  --bg1:#0a0e27; --bg2:#1a1a3e;
+  --card:#13183a; --card2:#1c2350;
+  --bdr:#2a3170;
+  --cyan:#00D8FC; --cyan-dim:#0099b8;
+  --yellow:#FAD53C; --orange:#FF6F00;
+  --red:#EF5350; --green:#66BB6A; --purple:#AB47BC;
+  --txt:#ffffff; --txt2:#9fb1d6; --muted:#6c7da6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Open Sans','Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 100%);
+  color:var(--txt);
+  min-height:100vh;padding:14px;
+}
+.app{max-width:1500px;margin:0 auto}
+header.hero{
+  background:linear-gradient(135deg,#001372 0%,#001a8c 60%,#0a2db0 100%);
+  border:1px solid var(--bdr);
+  border-radius:14px;padding:16px 22px;margin-bottom:14px;
+  position:relative;overflow:hidden;
+}
+header.hero::after{
+  content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(102,187,106,0.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+header.hero h1{font-size:1.4rem;color:var(--green);letter-spacing:.3px}
+header.hero p{color:var(--txt2);font-size:0.9rem;margin-top:4px;max-width:900px}
+.chip{
+  display:inline-block;background:var(--card2);color:var(--cyan);
+  font-size:0.7rem;padding:3px 8px;border-radius:999px;
+  border:1px solid var(--cyan-dim);margin-top:8px;
+  font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+}
+.header-links{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.header-link{
+  color:var(--cyan);text-decoration:none;font-size:0.85rem;
+  padding:5px 10px;border:1px solid var(--cyan-dim);border-radius:6px;
+  background:rgba(0,216,252,0.05);transition:all .15s;
+}
+.header-link:hover{background:var(--cyan);color:#001372}
+
+.layout{
+  display:grid;grid-template-columns:1.9fr 1fr;gap:14px;
+}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}}
+
+.card{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:12px;padding:14px;
+}
+.card h3{
+  color:var(--green);font-size:1rem;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;font-weight:700;
+}
+
+canvas{
+  display:block;width:100%;height:auto;
+  background:radial-gradient(ellipse at center,#0e1538 0%,#080b22 70%,#04061a 100%);
+  border-radius:8px;border:1px solid var(--bdr);
+}
+
+/* Speed / control bar */
+.speed-bar{display:flex;gap:5px;align-items:center;font-size:0.78rem;color:var(--txt2);flex-wrap:wrap}
+.speed-chip{
+  background:var(--card2);color:var(--txt2);border:1px solid var(--bdr);
+  border-radius:6px;padding:5px 10px;font-size:0.78rem;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.speed-chip:hover{background:var(--bdr);color:var(--txt)}
+.speed-chip.on{background:var(--green);color:#001372;border-color:var(--green);font-weight:700}
+
+/* Sliders */
+.slider-row{margin:10px 0}
+.slider-row .lbl{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.83rem;color:var(--txt2);margin-bottom:5px;
+}
+.slider-row .lbl .val{
+  font-family:'JetBrains Mono','Consolas',monospace;
+  font-weight:700;color:var(--yellow);font-size:0.9rem;
+  background:var(--card2);padding:2px 8px;border-radius:6px;
+  border:1px solid var(--bdr);min-width:60px;text-align:right;
+}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;
+  background:var(--bdr);border-radius:3px;outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;
+  background:var(--green);border-radius:50%;cursor:pointer;
+  border:2px solid #001372;box-shadow:0 0 6px rgba(102,187,106,.5);
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;background:var(--green);border-radius:50%;
+  cursor:pointer;border:2px solid #001372;
+}
+
+/* Branch cards */
+.branch-card{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:10px 12px;margin-bottom:8px;
+}
+.branch-card .head{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.85rem;color:var(--txt2);margin-bottom:6px;
+}
+.branch-card .head .lbl{font-weight:700}
+.branch-card .head .live{
+  font-family:'JetBrains Mono',monospace;font-weight:700;
+  color:var(--yellow);font-size:0.9rem;
+}
+
+/* Readouts */
+.reads{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;
+}
+.reads .item{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:8px 10px;
+}
+.reads .item .k{font-size:0.68rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+.reads .item .v{
+  font-family:'JetBrains Mono',monospace;font-weight:700;
+  font-size:1rem;color:var(--cyan);margin-top:2px;
+}
+.reads .item.warn .v{color:var(--yellow)}
+.reads .item.big{grid-column:1/-1}
+.reads .item.big .v{font-size:1.1rem;color:var(--green)}
+
+/* Kirchhoff banner */
+.kirchhoff{
+  margin-top:10px;
+  background:linear-gradient(135deg,rgba(102,187,106,0.15),rgba(0,216,252,0.08));
+  border:1px solid var(--green);border-radius:8px;
+  padding:10px 12px;
+  font-size:0.88rem;line-height:1.4;
+}
+.kirchhoff .title{
+  font-weight:700;color:var(--green);font-size:0.75rem;
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;
+}
+.kirchhoff .eq{
+  font-family:'JetBrains Mono',monospace;color:var(--yellow);
+  font-size:0.95rem;font-weight:700;margin-top:4px;
+}
+
+/* Score */
+.score-row{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+}
+.score-row .badge{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:999px;padding:5px 12px;font-size:0.82rem;
+  color:var(--cyan);font-family:'JetBrains Mono',monospace;font-weight:700;
+}
+
+.presets{margin-top:10px}
+.presets .lbl{font-size:0.72rem;color:var(--txt2);text-transform:uppercase;margin-bottom:5px;letter-spacing:.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-btn{
+  background:var(--card2);color:var(--cyan);border:1px solid var(--cyan-dim);
+  border-radius:999px;padding:4px 10px;font-size:0.75rem;cursor:pointer;
+  font-family:inherit;font-weight:600;
+}
+.chip-btn:hover{background:var(--cyan);color:#001372}
+
+.footer{
+  display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);
+}
+.btn{
+  background:var(--card2);color:var(--txt);
+  border:1px solid var(--bdr);border-radius:8px;
+  padding:7px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;
+  font-family:inherit;transition:all .15s;
+}
+.btn:hover{background:var(--bdr)}
+.btn.primary{background:var(--green);color:#001372;border-color:var(--green)}
+
+.instructions{
+  margin-top:10px;
+  background:linear-gradient(135deg,rgba(0,216,252,0.10),rgba(250,213,60,0.05));
+  border:1px solid var(--cyan-dim);border-radius:8px;
+  color:var(--txt2);font-size:0.85rem;line-height:1.5;padding:10px 12px;
+}
+.instructions strong{color:var(--yellow)}
+.instructions kbd{
+  background:var(--card2);border:1px solid var(--bdr);color:var(--cyan);
+  border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;
+  font-size:0.78rem;font-weight:700;
+}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:30px;z-index:100;
+  background:var(--card);border:2px solid var(--green);
+  color:var(--txt);padding:12px 20px;border-radius:10px;
+  font-size:0.9rem;font-weight:600;text-align:center;max-width:90vw;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);
+  opacity:0;pointer-events:none;transition:all .25s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hero">
+  <h1>🐍 Current Snake — Kirchhoff's Junction Law</h1>
+  <p>The snake IS the electric current. It flows through the circuit as one snake, then at the <strong>junction</strong> it splits into TWO smaller snakes — the split ratio is set by the resistances of the two branches (lower R → bigger snake). At the merge point they combine back. Total in = total out. That's Kirchhoff.</p>
+  <span class="chip">Sec 2 G3/G2 Science · Kirchhoff Current Law</span>
+  <div class="header-links">
+    <a class="header-link" href="ch13-electrical-circuits-simulator.html">← Main simulator</a>
+    <a class="header-link" href="ch13-coin-circuit-game.html">💰 Coin game</a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0"><span>🐍</span> Snake Circuit</h3>
+      <div class="speed-bar">
+        <span style="text-transform:uppercase;letter-spacing:.5px">Speed:</span>
+        <button class="speed-chip" data-sp="0.3" onclick="setSpeed(0.3)">🐢 0.3×</button>
+        <button class="speed-chip on" data-sp="0.6" onclick="setSpeed(0.6)">🚶 0.6×</button>
+        <button class="speed-chip" data-sp="1" onclick="setSpeed(1)">🏃 1×</button>
+        <button class="speed-chip" data-sp="2" onclick="setSpeed(2)">⚡ 2×</button>
+        <button class="speed-chip" id="pause-btn" onclick="togglePause()" style="border-color:var(--orange);color:var(--orange)">⏸ Pause</button>
+      </div>
+    </div>
+    <canvas id="stage" width="1000" height="620"></canvas>
+    <div class="instructions">
+      <strong>How it works:</strong> The snake head starts at the battery + terminal and flows clockwise. At the junction, it <strong>auto-splits</strong>: the bigger sub-snake takes the branch with LOWER resistance (more current). At the merge point, both sub-snakes re-combine. Adjust the two branch R sliders on the right to change the split. Kirchhoff's junction rule: <em>I<sub>in</sub> = I<sub>1</sub> + I<sub>2</sub></em> — the sub-snake sizes always add up to the original.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span>🎛️</span> Circuit Controls</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Battery voltage (drives snake speed)</span><span class="val" id="r-V">9 V</span></div>
+      <input type="range" id="s-V" min="3" max="18" step="1" value="9">
+    </div>
+
+    <div class="branch-card">
+      <div class="head">
+        <span class="lbl">🌊 Branch 1 (top)</span>
+        <span class="live" id="live-b1">I₁ = 3.00 A</span>
+      </div>
+      <div class="slider-row" style="margin:2px 0">
+        <div class="lbl"><span>Resistance R₁</span><span class="val" id="r-R1">3 Ω</span></div>
+        <input type="range" id="s-R1" min="1" max="10" step="1" value="3">
+      </div>
+    </div>
+
+    <div class="branch-card">
+      <div class="head">
+        <span class="lbl">🌊 Branch 2 (bottom)</span>
+        <span class="live" id="live-b2">I₂ = 3.00 A</span>
+      </div>
+      <div class="slider-row" style="margin:2px 0">
+        <div class="lbl"><span>Resistance R₂</span><span class="val" id="r-R2">3 Ω</span></div>
+        <input type="range" id="s-R2" min="1" max="10" step="1" value="3">
+      </div>
+    </div>
+
+    <div class="reads">
+      <div class="item warn"><div class="k">Total current I</div><div class="v" id="r-Itot">6.00 A</div></div>
+      <div class="item"><div class="k">Effective R</div><div class="v" id="r-Reff">1.50 Ω</div></div>
+      <div class="item big"><div class="k">Split ratio (snake segments)</div><div class="v" id="r-split">1 : 1</div></div>
+    </div>
+
+    <div class="kirchhoff">
+      <div class="title">⚡ Kirchhoff Junction Law</div>
+      <div>Current in = current out at every junction. Snake segments obey the same rule.</div>
+      <div class="eq" id="kirchhoff-eq">6.00 A = 3.00 A + 3.00 A ✓</div>
+    </div>
+
+    <div class="score-row">
+      <div class="badge">🔁 Loops: <span id="sc-loops">0</span></div>
+      <div class="badge">🐍 Longest: <span id="sc-longest">10</span></div>
+    </div>
+
+    <div class="presets">
+      <div class="lbl">Presets:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="preset('equal')">Equal split (R₁=R₂)</button>
+        <button class="chip-btn" onclick="preset('threeone')">3:1 split (R₁ ≪ R₂)</button>
+        <button class="chip-btn" onclick="preset('extreme')">10:1 (extreme)</button>
+        <button class="chip-btn" onclick="preset('reverse')">Swap: R₂ ≪ R₁</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn" onclick="resetGame()">↺ Restart snake</button>
+      <button class="btn primary" onclick="stepOnce()">👣 Step 1 tick</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   PHYSICS
+   ========================================================= */
+const state = {
+  V: 9,
+  R1: 3,
+  R2: 3,
+  speed: 0.6,
+  paused: false,
+  loopsCompleted: 0,
+  longestSnake: 10
+};
+
+function circuit(){
+  const {V, R1, R2} = state;
+  const I1 = V / R1;
+  const I2 = V / R2;
+  const Itot = I1 + I2;
+  const Reff = V / Itot;   // 1/Rp = 1/R1 + 1/R2 → Reff = V/Itot
+  const frac1 = I1 / Itot;
+  const frac2 = I2 / Itot;
+  return {I1, I2, Itot, Reff, frac1, frac2};
+}
+
+/* =========================================================
+   MAZE / PATH DEFINITION
+   =========================================================
+   The circuit path is a closed loop. Cells are (col, row) on a 20×12 grid at cellSize=48.
+   Path segments (in flow order):
+     1. Trunk: from battery+ (col 1) up + right along top → junction node at (10, 3)
+     2. At junction, split into:
+        Branch 1 (top): junction → (17, 3) [top row]
+        Branch 2 (bottom): junction → down → (10, 8) → right → (17, 8) [bottom row]
+     3. Merge: both branches meet at (18, 5)
+     4. Return: down and left back to battery- at (1, 10)
+*/
+const grid = {cols: 20, rows: 13, cellSize: 48};
+// IN and OUT junctions are shared nodes — both branches connect the same two nodes,
+// which is what "parallel" means in a real circuit.
+const path = {
+  // Trunk runs from battery+ up the left rail and across the top to the IN junction.
+  trunk: buildLine([1,10], [1,3]).concat(buildLine([1,3], [10,3]).slice(1)),
+
+  junction_in:  {c:10, r:3},   // where the trunk splits
+  junction_out: {c:17, r:8},   // where both branches merge back (bottom-row node)
+
+  // Branch 1 (top): right along top row, then straight down to the OUT junction.
+  branch1: buildLine([10,3], [17,3])
+    .concat(buildLine([17,3], [17,8]).slice(1)),
+
+  // Branch 2 (bottom): down to row 8, then right along bottom row to the OUT junction.
+  // Both branches start at the IN junction cell (10,3) so the split is visually seamless.
+  branch2: buildLine([10,3], [10,8])
+    .concat(buildLine([10,8], [17,8]).slice(1)),
+
+  // Tail from OUT junction back to battery−.
+  tail: buildLine([17,8], [17,10]).slice(1)
+    .concat(buildLine([17,10], [1,10]).slice(1))
+};
+
+function buildLine(a, b){
+  // straight horizontal or vertical line from a to b (inclusive), array of {c,r}
+  const [c1,r1] = a, [c2,r2] = b;
+  const out = [];
+  if(c1 === c2){
+    const step = r2 > r1 ? 1 : -1;
+    for(let r = r1; r !== r2 + step; r += step) out.push({c:c1, r});
+  } else if(r1 === r2){
+    const step = c2 > c1 ? 1 : -1;
+    for(let c = c1; c !== c2 + step; c += step) out.push({c, r:r1});
+  }
+  return out;
+}
+function cellsEqual(a,b){ return a && b && a.c===b.c && a.r===b.r; }
+
+/* =========================================================
+   SNAKE STATE
+   =========================================================
+   We model the snake in three phases:
+   - 'trunk': one snake advancing along `path.trunk`. Head index moves; tail lags by snakeLen.
+   - 'split': two sub-snakes advancing along branch1 (top) and branch2 (bottom) respectively,
+              with lengths proportional to their currents.
+   - 'merge': after both sub-snakes reach the far end of their branch, they combine into one
+              snake along `path.tail`.
+   For simplicity we model a single "head progress" scalar per active snake stretch,
+   with `snakeLen` cells behind it. Cells are drawn as filled squares along the path arrays.
+*/
+const snake = {
+  phase: 'trunk',
+  trunkHead: 0,     // index into path.trunk
+  b1Head: 0,        // index into path.branch1 (from junction outward)
+  b2Head: 0,        // index into path.branch2
+  b1Len: 5,
+  b2Len: 5,
+  b1Done: false,
+  b2Done: false,
+  tailHead: 0,      // index into path.tail (after merge)
+  snakeLen: 10,     // total snake length in cells
+  substep: 0        // fractional forward progress within current tick
+};
+
+/* =========================================================
+   BINDINGS
+   ========================================================= */
+function bindReadouts(){
+  const c = circuit();
+  document.getElementById('r-V').textContent = state.V+' V';
+  document.getElementById('r-R1').textContent = state.R1+' Ω';
+  document.getElementById('r-R2').textContent = state.R2+' Ω';
+  document.getElementById('s-V').value = state.V;
+  document.getElementById('s-R1').value = state.R1;
+  document.getElementById('s-R2').value = state.R2;
+  document.getElementById('live-b1').textContent = `I₁ = ${c.I1.toFixed(2)} A`;
+  document.getElementById('live-b2').textContent = `I₂ = ${c.I2.toFixed(2)} A`;
+  document.getElementById('r-Itot').textContent = c.Itot.toFixed(2)+' A';
+  document.getElementById('r-Reff').textContent = c.Reff.toFixed(2)+' Ω';
+  // pretty ratio like "3 : 1"
+  const g = gcd(Math.round(c.I1*10), Math.round(c.I2*10)) || 1;
+  const a = Math.round(c.I1*10 / g), b = Math.round(c.I2*10 / g);
+  document.getElementById('r-split').textContent = `${a} : ${b}`;
+  document.getElementById('kirchhoff-eq').textContent =
+    `${c.Itot.toFixed(2)} A = ${c.I1.toFixed(2)} A + ${c.I2.toFixed(2)} A ✓`;
+  document.getElementById('sc-loops').textContent = state.loopsCompleted;
+  document.getElementById('sc-longest').textContent = state.longestSnake;
+}
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){[a,b]=[b,a%b]} return a; }
+
+document.getElementById('s-V').addEventListener('input', e=>{ state.V = parseInt(e.target.value); bindReadouts(); });
+document.getElementById('s-R1').addEventListener('input', e=>{ state.R1 = parseInt(e.target.value); bindReadouts(); });
+document.getElementById('s-R2').addEventListener('input', e=>{ state.R2 = parseInt(e.target.value); bindReadouts(); });
+
+function setSpeed(v){
+  state.speed = v;
+  document.querySelectorAll('.speed-chip[data-sp]').forEach(el=>{
+    el.classList.toggle('on', parseFloat(el.dataset.sp) === v);
+  });
+}
+function togglePause(){
+  state.paused = !state.paused;
+  const b = document.getElementById('pause-btn');
+  b.textContent = state.paused ? '▶ Play' : '⏸ Pause';
+  b.style.color = state.paused ? 'var(--green)' : 'var(--orange)';
+  b.style.borderColor = state.paused ? 'var(--green)' : 'var(--orange)';
+}
+function stepOnce(){
+  const wasPaused = state.paused;
+  state.paused = false;
+  updateSnake(true); draw();
+  state.paused = wasPaused;
+}
+
+function preset(k){
+  const map = {
+    equal:    {V:9, R1:3, R2:3},
+    threeone: {V:9, R1:2, R2:6},
+    extreme:  {V:9, R1:1, R2:10},
+    reverse:  {V:9, R1:6, R2:2}
+  };
+  Object.assign(state, map[k]);
+  bindReadouts();
+  toast(`Preset applied: ${k}`);
+}
+
+function resetGame(){
+  Object.assign(snake, {
+    phase:'trunk', trunkHead:0, b1Head:0, b2Head:0,
+    b1Done:false, b2Done:false, tailHead:0, snakeLen:10, substep:0
+  });
+  state.loopsCompleted = 0;
+  bindReadouts();
+  toast('Snake restarted.');
+}
+
+/* =========================================================
+   SNAKE ADVANCE LOGIC
+   ========================================================= */
+function updateSnake(oneStep=false){
+  if(state.paused && !oneStep) return;
+  const c = circuit();
+  // Each tick we advance by "speed × baseStep" cells. baseStep tuned so at 1x you move ~1 cell per 2 ticks.
+  snake.substep += state.speed * 0.5;
+  while(snake.substep >= 1){
+    snake.substep -= 1;
+    advanceOneCell(c);
+  }
+}
+
+function advanceOneCell(c){
+  if(snake.phase === 'trunk'){
+    snake.trunkHead++;
+    if(snake.trunkHead >= path.trunk.length - 1){
+      // Reached junction — perform the split
+      const total = snake.snakeLen;
+      snake.b1Len = Math.max(1, Math.round(total * c.frac1));
+      snake.b2Len = Math.max(1, Math.round(total * c.frac2));
+      // Adjust so they still sum to total (integer rounding)
+      const overflow = (snake.b1Len + snake.b2Len) - total;
+      if(overflow > 0){
+        // trim the larger one
+        if(snake.b1Len >= snake.b2Len) snake.b1Len -= overflow; else snake.b2Len -= overflow;
+      }
+      snake.b1Head = 0; snake.b2Head = 0;
+      snake.b1Done = snake.b2Done = false;
+      snake.phase = 'split';
+      toast(`⚡ Split! I₁:I₂ = ${snake.b1Len}:${snake.b2Len} (snake segments)`, 1500);
+    }
+  } else if(snake.phase === 'split'){
+    // Advance both sub-snakes independently.
+    if(!snake.b1Done){
+      snake.b1Head++;
+      if(snake.b1Head >= path.branch1.length - 1) snake.b1Done = true;
+    }
+    if(!snake.b2Done){
+      snake.b2Head++;
+      if(snake.b2Head >= path.branch2.length - 1) snake.b2Done = true;
+    }
+    if(snake.b1Done && snake.b2Done){
+      snake.phase = 'merge';
+      snake.tailHead = 0;
+      toast(`🔗 Merged! Back to ${snake.snakeLen} segments (Kirchhoff conserved).`, 1800);
+    }
+  } else if(snake.phase === 'merge'){
+    snake.tailHead++;
+    if(snake.tailHead >= path.tail.length - 1){
+      // completed a loop
+      state.loopsCompleted++;
+      snake.phase = 'trunk';
+      snake.trunkHead = 0;
+      snake.tailHead = 0;
+      if(snake.snakeLen > state.longestSnake) state.longestSnake = snake.snakeLen;
+    }
+  }
+}
+
+/* =========================================================
+   CANVAS RENDER
+   ========================================================= */
+const cv = document.getElementById('stage');
+const ctx = cv.getContext('2d');
+
+function cx(c){ return c * grid.cellSize + grid.cellSize/2 + 20; }
+function cy(r){ return r * grid.cellSize + grid.cellSize/2 + 20; }
+
+function drawWireCell(c, r, color='#2a3170', width=grid.cellSize*0.7){
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx(c), cy(r), width/2, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawPathBg(pathArr, colour='#2a3170'){
+  for(const p of pathArr){
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.arc(cx(p.c), cy(p.r), grid.cellSize*0.32, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawSnakeSegment(c, r, isHead=false, color='#66BB6A', size=grid.cellSize*0.75){
+  const x = cx(c), y = cy(r);
+  // glow
+  const g = ctx.createRadialGradient(x, y, 2, x, y, size);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'rgba(102,187,106,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI*2); ctx.fill();
+  // body
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, size*0.45, 0, Math.PI*2); ctx.fill();
+  if(isHead){
+    // eye
+    ctx.fillStyle = '#001372';
+    ctx.beginPath(); ctx.arc(x+3, y-3, 3, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawResistorBadge(x, y, R, label, colour){
+  // rounded rect background
+  const w = 90, h = 40;
+  ctx.fillStyle = '#001372'; ctx.strokeStyle = colour; ctx.lineWidth = 2;
+  ctx.beginPath();
+  roundRect(ctx, x-w/2, y-h/2, w, h, 8);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = colour;
+  ctx.font = 'bold 12px "Open Sans", sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label, x, y-9);
+  ctx.font = 'bold 15px "JetBrains Mono", monospace';
+  ctx.fillText(`R = ${R} Ω`, x, y+9);
+}
+
+function drawBattery(x, y, V){
+  ctx.strokeStyle = '#FAD53C'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(x-18, y-20); ctx.lineTo(x-18, y+20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-10, y-12); ctx.lineTo(x-10, y+12); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y-20);    ctx.lineTo(x, y+20);    ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+10, y-12); ctx.lineTo(x+10, y+12); ctx.stroke();
+  // label
+  ctx.fillStyle = '#FAD53C';
+  ctx.font = 'bold 24px "JetBrains Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(`${V} V`, x, y+45);
+  ctx.font = 'bold 14px "Open Sans", sans-serif';
+  ctx.fillText('BATTERY', x, y-42);
+}
+
+function drawJunctionMarker(x, y, label, colour){
+  // Star-ish marker
+  ctx.fillStyle = colour;
+  ctx.beginPath();
+  ctx.arc(x, y, 22, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#001372';
+  ctx.font = 'bold 15px "Open Sans", sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label, x, y);
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y, x+w,y+h, r);
+  ctx.arcTo(x+w,y+h, x,y+h, r);
+  ctx.arcTo(x,y+h, x,y, r);
+  ctx.arcTo(x,y, x+w,y, r);
+  ctx.closePath();
+}
+
+function draw(){
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0,0,w,h);
+  const c = circuit();
+
+  // draw path backgrounds (as connected wire pill)
+  drawPathBg(path.trunk);
+  drawPathBg(path.branch1);
+  drawPathBg(path.branch2);
+  drawPathBg(path.tail);
+
+  // IN junction — where the trunk splits into the two branches
+  const jx = cx(path.junction_in.c), jy = cy(path.junction_in.r);
+  drawJunctionMarker(jx, jy, 'IN', '#FAD53C');
+
+  // OUT junction — where both branches merge back into the tail (same node)
+  const mx = cx(path.junction_out.c), my = cy(path.junction_out.r);
+  drawJunctionMarker(mx, my, 'OUT', '#00D8FC');
+
+  // Resistor badges on each branch (midpoint of branch)
+  const b1Mid = path.branch1[Math.floor(path.branch1.length/2)];
+  const b2Mid = path.branch2[Math.floor(path.branch2.length/2)];
+  drawResistorBadge(cx(b1Mid.c), cy(b1Mid.r) - 34, state.R1, 'R₁ top', '#66BB6A');
+  drawResistorBadge(cx(b2Mid.c), cy(b2Mid.r) + 34, state.R2, 'R₂ bottom', '#66BB6A');
+
+  // Battery — at battery+ cell (1, 10) and battery- (1, 3). Actually loop is battery+ at (1,10) going UP, battery- at end also (1,10).
+  // Show battery symbol on the LEFT rail
+  drawBattery(cx(1) - 60, (cy(10) + cy(3)) / 2, state.V);
+
+  // Compute current head cells
+  drawSnake(c);
+
+  // Legend labels
+  ctx.fillStyle = '#9fb1d6';
+  ctx.font = 'bold 13px "Open Sans", sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('▶ Current flow direction: clockwise', 20, 4);
+  ctx.textAlign = 'right';
+  ctx.fillText(`Phase: ${snake.phase.toUpperCase()}   |   Loops: ${state.loopsCompleted}`, w-20, 4);
+}
+
+function drawSnake(c){
+  // Colour palette
+  const trunkCol = '#FAD53C';   // yellow trunk
+  const b1Col    = '#66BB6A';   // green top branch
+  const b2Col    = '#00D8FC';   // cyan bottom branch
+  const mergeCol = '#FAD53C';
+
+  if(snake.phase === 'trunk'){
+    // draw trunk segments: head at trunkHead, tail at trunkHead - snakeLen
+    const head = snake.trunkHead;
+    for(let k=0;k<snake.snakeLen;k++){
+      const idx = head - k;
+      if(idx < 0) continue;
+      const p = path.trunk[idx];
+      if(!p) continue;
+      drawSnakeSegment(p.c, p.r, k===0, trunkCol);
+    }
+  } else if(snake.phase === 'split'){
+    // Draw sub-snake 1 on branch1
+    for(let k=0;k<snake.b1Len;k++){
+      const idx = snake.b1Head - k;
+      if(idx < 0) continue;
+      const p = path.branch1[idx];
+      if(!p) continue;
+      drawSnakeSegment(p.c, p.r, k===0 && !snake.b1Done, b1Col);
+    }
+    // Sub-snake 2 on branch2
+    for(let k=0;k<snake.b2Len;k++){
+      const idx = snake.b2Head - k;
+      if(idx < 0) continue;
+      const p = path.branch2[idx];
+      if(!p) continue;
+      drawSnakeSegment(p.c, p.r, k===0 && !snake.b2Done, b2Col);
+    }
+  } else if(snake.phase === 'merge'){
+    // Full snake on merge tail
+    for(let k=0;k<snake.snakeLen;k++){
+      const idx = snake.tailHead - k;
+      if(idx < 0) continue;
+      const p = path.tail[idx];
+      if(!p) continue;
+      drawSnakeSegment(p.c, p.r, k===0, mergeCol);
+    }
+  }
+
+  // Live labels next to sub-snakes during split phase
+  if(snake.phase === 'split'){
+    const b1Head = path.branch1[Math.min(snake.b1Head, path.branch1.length-1)];
+    const b2Head = path.branch2[Math.min(snake.b2Head, path.branch2.length-1)];
+    if(b1Head){
+      ctx.fillStyle = '#001372';
+      ctx.fillRect(cx(b1Head.c)+18, cy(b1Head.r)-30, 96, 22);
+      ctx.strokeStyle = '#66BB6A'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx(b1Head.c)+18, cy(b1Head.r)-30, 96, 22);
+      ctx.fillStyle = '#66BB6A';
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(`${snake.b1Len} seg = ${c.I1.toFixed(1)}A`, cx(b1Head.c)+22, cy(b1Head.r)-19);
+    }
+    if(b2Head){
+      ctx.fillStyle = '#001372';
+      ctx.fillRect(cx(b2Head.c)+18, cy(b2Head.r)+16, 96, 22);
+      ctx.strokeStyle = '#00D8FC'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx(b2Head.c)+18, cy(b2Head.r)+16, 96, 22);
+      ctx.fillStyle = '#00D8FC';
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(`${snake.b2Len} seg = ${c.I2.toFixed(1)}A`, cx(b2Head.c)+22, cy(b2Head.r)+27);
+    }
+  }
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+let toastTimer = null;
+function toast(msg, ms=2000){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+
+/* =========================================================
+   MAIN LOOP
+   ========================================================= */
+function tick(){
+  try{
+    updateSnake();
+    // Update readouts occasionally
+    bindReadouts();
+    draw();
+  }catch(e){ console.error('tick error', e); }
+}
+
+// Kickoff
+bindReadouts();
+draw();
+setInterval(tick, 60);
+</script>
+</body>
+</html>

@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch 13 — Coin Circuit Game 💰</title>
+<style>
+:root{
+  --bg1:#0a0e27; --bg2:#1a1a3e;
+  --card:#13183a; --card2:#1c2350;
+  --bdr:#2a3170;
+  --cyan:#00D8FC; --cyan-dim:#0099b8;
+  --yellow:#FAD53C; --orange:#FF6F00;
+  --red:#EF5350; --green:#66BB6A; --purple:#AB47BC;
+  --txt:#ffffff; --txt2:#9fb1d6; --muted:#6c7da6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Open Sans','Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 100%);
+  color:var(--txt);
+  min-height:100vh;padding:14px;
+}
+.app{max-width:1500px;margin:0 auto}
+header.hero{
+  background:linear-gradient(135deg,#001372 0%,#001a8c 60%,#0a2db0 100%);
+  border:1px solid var(--bdr);
+  border-radius:14px;padding:16px 22px;margin-bottom:14px;
+  position:relative;overflow:hidden;
+}
+header.hero::after{
+  content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(250,213,60,0.20) 0%,transparent 70%);
+  pointer-events:none;
+}
+header.hero h1{font-size:1.4rem;color:var(--yellow);letter-spacing:.3px}
+header.hero p{color:var(--txt2);font-size:0.9rem;margin-top:4px;max-width:820px}
+.chip{
+  display:inline-block;background:var(--card2);color:var(--cyan);
+  font-size:0.7rem;padding:3px 8px;border-radius:999px;
+  border:1px solid var(--cyan-dim);margin-top:8px;
+  font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+}
+.back{
+  display:inline-block;margin-top:8px;color:var(--cyan);
+  text-decoration:none;font-size:0.85rem;
+}
+.back:hover{color:var(--yellow)}
+
+.layout{
+  display:grid;grid-template-columns:1.9fr 1fr;gap:14px;
+}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}}
+
+.card{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:12px;padding:14px;
+}
+.card h3{
+  color:var(--cyan);font-size:1rem;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;font-weight:700;
+}
+
+canvas{
+  display:block;width:100%;height:auto;
+  background:radial-gradient(ellipse at center,#0e1538 0%,#080b22 70%,#04061a 100%);
+  border-radius:8px;border:1px solid var(--bdr);
+}
+
+.insight{
+  margin-top:10px;padding:8px 12px;
+  background:linear-gradient(135deg,rgba(0,216,252,0.10),rgba(250,213,60,0.05));
+  border:1px solid var(--cyan-dim);border-radius:8px;
+  color:var(--txt2);font-size:0.88rem;line-height:1.45;
+}
+.insight strong{color:var(--yellow)}
+
+/* Controls */
+.slider-row{margin:10px 0}
+.slider-row .lbl{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.83rem;color:var(--txt2);margin-bottom:5px;
+}
+.slider-row .lbl .val{
+  font-family:'JetBrains Mono','Consolas',monospace;
+  font-weight:700;color:var(--yellow);font-size:0.9rem;
+  background:var(--card2);padding:2px 8px;border-radius:6px;
+  border:1px solid var(--bdr);min-width:60px;text-align:right;
+}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;
+  background:var(--bdr);border-radius:3px;outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;
+  background:var(--yellow);border-radius:50%;cursor:pointer;
+  border:2px solid #001372;box-shadow:0 0 6px rgba(250,213,60,.4);
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;background:var(--yellow);border-radius:50%;
+  cursor:pointer;border:2px solid #001372;
+}
+
+.mode-toggle{
+  display:flex;background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:3px;margin:10px 0;
+}
+.mode-toggle button{
+  flex:1;background:transparent;color:var(--txt2);border:none;
+  padding:7px 10px;font-size:0.85rem;font-weight:600;cursor:pointer;
+  border-radius:5px;font-family:inherit;transition:all .15s;
+}
+.mode-toggle button.on{background:var(--cyan);color:#001372}
+
+.stepper{
+  display:inline-flex;background:var(--card2);
+  border:1px solid var(--bdr);border-radius:6px;overflow:hidden;
+}
+.stepper button{
+  background:transparent;color:var(--cyan);border:none;
+  width:28px;height:26px;font-size:1rem;cursor:pointer;font-weight:700;
+}
+.stepper button:hover{background:var(--bdr)}
+.stepper .num{
+  width:30px;height:26px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--yellow);
+  background:var(--card);
+}
+
+.shop-slider{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:8px 10px;margin-bottom:6px;
+}
+.shop-slider.disabled{opacity:0.4;pointer-events:none}
+.shop-slider .head{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.82rem;color:var(--txt2);margin-bottom:4px;
+}
+.shop-slider .head .price{
+  font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--yellow);
+}
+.shop-slider .head .emoji{font-size:1rem}
+
+/* Scoreboard */
+.score{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;
+}
+.score .item{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:8px;padding:8px 10px;
+}
+.score .item .k{
+  font-size:0.68rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;
+}
+.score .item .v{
+  font-family:'JetBrains Mono',monospace;font-weight:700;
+  font-size:1rem;color:var(--cyan);margin-top:2px;
+}
+.score .item.good .v{color:var(--green)}
+.score .item.warn .v{color:var(--yellow)}
+.score .item.wide{grid-column:1/-1}
+
+/* Achievements / badges */
+.badges{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;
+}
+.badge{
+  background:var(--card2);border:1px solid var(--bdr);
+  border-radius:999px;padding:4px 10px;font-size:0.75rem;
+  color:var(--muted);transition:all .3s;
+}
+.badge.earned{
+  background:linear-gradient(135deg,var(--yellow),var(--orange));
+  color:#001372;border-color:var(--yellow);font-weight:700;
+  box-shadow:0 0 12px rgba(250,213,60,.35);
+}
+
+.footer{
+  display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);
+}
+.btn{
+  background:var(--card2);color:var(--txt);
+  border:1px solid var(--bdr);border-radius:8px;
+  padding:7px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;
+  font-family:inherit;transition:all .15s;
+}
+.btn:hover{background:var(--bdr)}
+.btn.primary{background:var(--yellow);color:#001372;border-color:var(--yellow)}
+.btn.primary:hover{background:var(--orange);border-color:var(--orange)}
+
+/* Preset chips */
+.presets{margin-top:8px}
+.presets .lbl{font-size:0.72rem;color:var(--txt2);text-transform:uppercase;margin-bottom:5px;letter-spacing:.5px}
+.presets .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-btn{
+  background:var(--card2);color:var(--cyan);border:1px solid var(--cyan-dim);
+  border-radius:999px;padding:4px 10px;font-size:0.75rem;cursor:pointer;
+  font-family:inherit;font-weight:600;
+}
+.chip-btn:hover{background:var(--cyan);color:#001372}
+
+.speed-chip{
+  background:var(--card2);color:var(--txt2);border:1px solid var(--bdr);
+  border-radius:6px;padding:5px 10px;font-size:0.78rem;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.speed-chip:hover{background:var(--bdr);color:var(--txt)}
+.speed-chip.on{background:var(--cyan);color:#001372;border-color:var(--cyan);font-weight:700}
+
+.legend{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;
+  font-size:0.75rem;color:var(--muted);
+}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:30px;z-index:100;
+  background:var(--card);border:2px solid var(--yellow);
+  color:var(--txt);padding:12px 20px;border-radius:10px;
+  font-size:0.9rem;font-weight:600;text-align:center;max-width:90vw;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);
+  opacity:0;pointer-events:none;transition:all .25s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hero">
+  <h1>💰 Coin Circuit Game — Chapter 13</h1>
+  <p>Every shopper starts at the <strong>bank</strong> with a coin bag. That's their <strong>voltage</strong>. They walk clockwise around the street, pay coins at each <strong>shop</strong> (resistor), and arrive back at the bank with an empty bag. Watch how the coin count drops. Compare series vs parallel. Set expensive shops vs cheap ones.</p>
+  <span class="chip">Sec 2 G3/G2 Science · WS1+WS2 analogy</span>
+  <br>
+  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <a class="back" href="ch13-electrical-circuits-simulator.html" style="padding:5px 10px;border:1px solid var(--cyan-dim);border-radius:6px;background:rgba(0,216,252,0.05)">← Main simulator</a>
+    <a class="back" href="ch13-current-snake-game.html" style="padding:5px 10px;border:1px solid var(--green);border-radius:6px;background:rgba(102,187,106,0.05);color:var(--green)">🐍 Snake game →</a>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ CANVAS ============ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0"><span>🏙️</span> Voltage Village</h3>
+      <div class="speed-bar" style="display:flex;gap:5px;align-items:center;font-size:0.78rem;color:var(--txt2)">
+        <span style="text-transform:uppercase;letter-spacing:.5px">Speed:</span>
+        <button class="speed-chip" data-sp="0.25" onclick="setSpeed(0.25)">🐢 0.25×</button>
+        <button class="speed-chip on" data-sp="0.5" onclick="setSpeed(0.5)">🚶 0.5×</button>
+        <button class="speed-chip" data-sp="1" onclick="setSpeed(1)">🏃 1×</button>
+        <button class="speed-chip" data-sp="2" onclick="setSpeed(2)">⚡ 2×</button>
+        <button class="speed-chip" onclick="togglePause()" id="pause-btn" style="border-color:var(--orange);color:var(--orange)">⏸ Pause</button>
+      </div>
+    </div>
+    <canvas id="stage" width="1000" height="600"></canvas>
+    <div class="legend">
+      <span>🟢 = bag emptied perfectly (V used up)</span>
+      <span>🟡 = coins still in bag at bank</span>
+      <span>🔴 = shopper ran out too early</span>
+    </div>
+    <div class="insight" id="insight">
+      Adjust the sliders on the right. Each shopper's coin count above their head shows their <strong>remaining voltage</strong>. When they reach the bank on the left, the bag should be empty — meaning the full battery voltage was spent along the way.
+    </div>
+  </div>
+
+  <!-- ============ CONTROLS + SCORE ============ -->
+  <div class="card">
+    <h3><span>🎛️</span> Circuit Setup</h3>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Battery voltage (coin bag start)</span><span class="val" id="r-V">9 coins</span></div>
+      <input type="range" id="s-V" min="3" max="12" step="1" value="9">
+    </div>
+
+    <div class="mode-toggle">
+      <button id="mode-s" class="on" onclick="setMode('series')">🔗 Series</button>
+      <button id="mode-p" onclick="setMode('parallel')">🔀 Parallel</button>
+    </div>
+
+    <div class="slider-row">
+      <div class="lbl"><span id="n-label">Shops in a row</span>
+        <span class="stepper">
+          <button onclick="changeN(-1)">−</button>
+          <span class="num" id="r-N">2</span>
+          <button onclick="changeN(1)">+</button>
+        </span>
+      </div>
+    </div>
+
+    <div id="shop-sliders">
+      <div class="shop-slider" data-idx="0">
+        <div class="head"><span class="emoji">🏪</span><span>Shop A price (Ω)</span><span class="price" id="r-R0">4 Ω</span></div>
+        <input type="range" id="s-R0" min="1" max="10" step="1" value="4">
+      </div>
+      <div class="shop-slider" data-idx="1">
+        <div class="head"><span class="emoji">🍩</span><span>Shop B price (Ω)</span><span class="price" id="r-R1">4 Ω</span></div>
+        <input type="range" id="s-R1" min="1" max="10" step="1" value="4">
+      </div>
+      <div class="shop-slider" data-idx="2">
+        <div class="head"><span class="emoji">🎩</span><span>Shop C price (Ω)</span><span class="price" id="r-R2">4 Ω</span></div>
+        <input type="range" id="s-R2" min="1" max="10" step="1" value="4">
+      </div>
+    </div>
+
+    <div class="presets">
+      <div class="lbl">Presets:</div>
+      <div class="chips">
+        <button class="chip-btn" onclick="preset('cheap')">Cheap street</button>
+        <button class="chip-btn" onclick="preset('mall')">Parallel mall</button>
+        <button class="chip-btn" onclick="preset('mixedprice')">Unequal shops</button>
+        <button class="chip-btn" onclick="preset('luxury')">Luxury (high R)</button>
+      </div>
+    </div>
+
+    <h3 style="margin-top:16px"><span>🏆</span> Scoreboard</h3>
+    <div class="score">
+      <div class="item"><div class="k">Shoppers/sec (= current)</div><div class="v" id="sc-current">— A</div></div>
+      <div class="item good"><div class="k">Coins earned/sec (= power)</div><div class="v" id="sc-power">— W</div></div>
+      <div class="item"><div class="k">Perfectly emptied bags</div><div class="v" id="sc-perfect">0</div></div>
+      <div class="item warn"><div class="k">Wasted-coin arrivals</div><div class="v" id="sc-wasted">0</div></div>
+      <div class="item wide"><div class="k">Total earnings so far (all shops)</div><div class="v" id="sc-total">0 coins</div></div>
+    </div>
+
+    <div class="badges" id="badges">
+      <div class="badge" data-b="first">🥇 First perfect drain</div>
+      <div class="badge" data-b="bright">💡 Bright street (P ≥ 20 W)</div>
+      <div class="badge" data-b="flood">🌊 Coin flood (I ≥ 4 A)</div>
+      <div class="badge" data-b="unequal">⚖️ Unequal shops</div>
+      <div class="badge" data-b="fifty">🎉 50 perfect drains</div>
+      <div class="badge" data-b="challenge">🏆 Challenge master</div>
+    </div>
+
+    <div class="footer">
+      <button class="btn" onclick="resetGame()">↺ Reset scores</button>
+      <button class="btn primary" onclick="celebrateCheck()">✨ Show me a tip</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CHALLENGE MODE ============ -->
+<div class="card" style="margin-top:14px" id="challenge-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <h3 style="margin:0"><span>🎯</span> Challenge Mode</h3>
+    <div style="display:flex;gap:6px">
+      <button class="speed-chip on" id="ch-toggle" onclick="toggleChallenge()">🎮 Start challenge</button>
+      <button class="speed-chip" onclick="nextLevel()">⏭ Skip level</button>
+      <button class="speed-chip" onclick="resetChallenge()">↺ Restart</button>
+    </div>
+  </div>
+  <div id="challenge-body" style="margin-top:10px;display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="challenge-grid">
+      <div>
+        <div style="font-size:0.75rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Level <span id="ch-level">1</span> of 5</div>
+        <div id="ch-title" style="font-size:1.05rem;font-weight:700;color:var(--yellow)">—</div>
+        <div id="ch-goal" style="font-size:0.9rem;color:var(--txt2);margin-top:4px;line-height:1.45">—</div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Progress</div>
+        <div style="background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:2px;height:22px;position:relative">
+          <div id="ch-bar" style="background:linear-gradient(90deg,var(--cyan),var(--yellow));height:100%;width:0%;border-radius:6px;transition:width .3s"></div>
+        </div>
+        <div id="ch-progress" style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--cyan);margin-top:6px;font-weight:700">—</div>
+        <div id="ch-hint" style="font-size:0.82rem;color:var(--muted);margin-top:6px;font-style:italic;line-height:1.4">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   PHYSICS + STATE
+   ========================================================= */
+const game = {
+  V: 9,
+  mode: 'series',
+  N: 2,
+  R: [4,4,4],       // per-shop resistance
+  shoppers: [],
+  nextId: 1,
+  score: {
+    perfect: 0,
+    wasted: 0,
+    totalCoins: 0,
+    startTs: Date.now()
+  },
+  badges: {first:false, bright:false, flood:false, unequal:false, fifty:false, challenge:false},
+  spawnAcc: 0,
+  speed: 0.5,       // playback speed multiplier (default slow-mo)
+  paused: false,
+  challenge: {active:false, level:0, elapsed:0}
+};
+
+// Compute derived values
+function circuit(){
+  const {V, mode, N, R} = game;
+  const Rs = R.slice(0, N);
+  if(mode === 'series'){
+    const Rt = Rs.reduce((a,b)=>a+b, 0) || 1;
+    const I = V/Rt;
+    // per-shop voltage drop
+    const Vs = Rs.map(r => I*r);
+    return {mode, I_total:I, I_perBranch:[I], V_perShop:Vs, Rs, Rt};
+  } else {
+    const I_perBranch = Rs.map(r => V/r);
+    const I_total = I_perBranch.reduce((a,b)=>a+b, 0);
+    // per-branch shop takes ALL of V
+    const V_perShop = Rs.map(_=>V);
+    return {mode, I_total, I_perBranch, V_perShop, Rs, Rt:V/I_total};
+  }
+}
+
+/* =========================================================
+   BINDINGS
+   ========================================================= */
+function bind(){
+  document.getElementById('r-V').textContent = game.V + (game.V===1?' coin':' coins');
+  document.getElementById('r-N').textContent = game.N;
+  document.getElementById('n-label').textContent =
+    game.mode==='series' ? 'Shops in a row (series)' : 'Parallel branches (1 shop each)';
+  document.getElementById('mode-s').classList.toggle('on', game.mode==='series');
+  document.getElementById('mode-p').classList.toggle('on', game.mode==='parallel');
+  for(let i=0;i<3;i++){
+    document.getElementById('r-R'+i).textContent = game.R[i]+' Ω';
+    document.getElementById('s-R'+i).value = game.R[i];
+    document.getElementById('s-R'+i).closest('.shop-slider').classList.toggle('disabled', i>=game.N);
+  }
+  document.getElementById('s-V').value = game.V;
+  updateScoreboard();
+}
+
+function updateScoreboard(){
+  const c = circuit();
+  document.getElementById('sc-current').textContent = c.I_total.toFixed(2) + ' A';
+  const P = game.V * c.I_total;
+  document.getElementById('sc-power').textContent = P.toFixed(2) + ' W';
+  document.getElementById('sc-perfect').textContent = game.score.perfect;
+  document.getElementById('sc-wasted').textContent = game.score.wasted;
+  document.getElementById('sc-total').textContent = Math.round(game.score.totalCoins) + ' coins';
+
+  // Check badge unlocks
+  if(!game.badges.bright && P >= 20){ unlockBadge('bright', '💡 Bright street — total power ≥ 20 W'); }
+  if(!game.badges.flood  && c.I_total >= 4){ unlockBadge('flood', '🌊 Coin flood — current ≥ 4 A'); }
+  const uniqueR = new Set(game.R.slice(0, game.N));
+  if(!game.badges.unequal && game.N >= 2 && uniqueR.size > 1){ unlockBadge('unequal', '⚖️ Unequal shops — see how they earn differently'); }
+  if(!game.badges.fifty && game.score.perfect >= 50){ unlockBadge('fifty', '🎉 50 perfect drains!'); }
+
+  // Insight based on current state
+  document.getElementById('insight').innerHTML = buildInsight(c);
+}
+
+function buildInsight(c){
+  const {mode, I_total, V_perShop, Rs} = c;
+  const P = game.V * I_total;
+  if(mode==='series'){
+    const parts = V_perShop.map((v,i)=>`Shop ${'ABC'[i]} takes <strong>${v.toFixed(1)} coins</strong>`).join(', ');
+    return `<strong>Series:</strong> every shopper walks through all ${game.N} shops. ${parts} — together = <strong>${game.V.toFixed(0)} coins</strong> (the full bag). Current is the same at every shop = <strong>${I_total.toFixed(2)} A</strong>. Add a shop → total price goes up → shoppers/sec goes down → total earnings ${P<10?'stay LOW':'grow'} to ${P.toFixed(1)} W.`;
+  } else {
+    const parts = c.I_perBranch.map((I,i)=>`Shop ${'ABC'[i]}: <strong>${I.toFixed(2)} shoppers/sec</strong>`).join(', ');
+    return `<strong>Parallel:</strong> each shopper picks ONE branch and drops their <em>full</em> ${game.V.toFixed(0)}-coin bag at that one shop. Cheaper shops attract more traffic — ${parts}. Total current from bank = <strong>${I_total.toFixed(2)} A</strong>. Each shop's brightness = ${game.V} × its own traffic; unequal Rs give unequal traffic.`;
+  }
+}
+
+/* =========================================================
+   INPUT HANDLERS
+   ========================================================= */
+document.getElementById('s-V').addEventListener('input', e=>{
+  game.V = parseInt(e.target.value); bind();
+});
+for(let i=0;i<3;i++){
+  document.getElementById('s-R'+i).addEventListener('input', e=>{
+    game.R[i] = parseInt(e.target.value); bind();
+  });
+}
+function setMode(m){
+  game.mode = m;
+  game.shoppers.length = 0; // clear shoppers on mode change
+  bind();
+}
+function changeN(d){
+  game.N = Math.max(1, Math.min(3, game.N + d));
+  game.shoppers.length = 0;
+  bind();
+}
+function preset(k){
+  const map = {
+    cheap:      {V:6,  mode:'series',   N:3, R:[2,2,2]},
+    mall:       {V:9,  mode:'parallel', N:3, R:[3,3,3]},
+    mixedprice: {V:12, mode:'series',   N:3, R:[2,4,6]},
+    luxury:     {V:12, mode:'series',   N:1, R:[10,4,4]}
+  };
+  Object.assign(game, map[k]);
+  game.shoppers.length = 0;
+  bind();
+}
+function resetGame(){
+  game.score = {perfect:0, wasted:0, totalCoins:0, startTs:Date.now()};
+  Object.keys(game.badges).forEach(k=>game.badges[k]=false);
+  document.querySelectorAll('.badge').forEach(b=>b.classList.remove('earned'));
+  game.shoppers.length = 0;
+  bind();
+  toast('Scores reset.');
+}
+function setSpeed(v){
+  game.speed = v;
+  document.querySelectorAll('.speed-chip[data-sp]').forEach(el=>{
+    el.classList.toggle('on', parseFloat(el.dataset.sp) === v);
+  });
+}
+function togglePause(){
+  game.paused = !game.paused;
+  const btn = document.getElementById('pause-btn');
+  btn.textContent = game.paused ? '▶ Play' : '⏸ Pause';
+  btn.style.color = game.paused ? 'var(--green)' : 'var(--orange)';
+  btn.style.borderColor = game.paused ? 'var(--green)' : 'var(--orange)';
+}
+function celebrateCheck(){
+  const c = circuit();
+  const P = game.V * c.I_total;
+  let tip;
+  if(game.mode==='series' && game.N>=2 && new Set(game.R.slice(0,game.N)).size===1){
+    tip = `Series with identical shops → each shop takes ${(game.V/game.N).toFixed(1)} coins. That's V ÷ N.`;
+  } else if(game.mode==='parallel' && new Set(game.R.slice(0,game.N)).size>1){
+    tip = `Parallel with unequal shops: cheaper shop (lower Ω) attracts MORE shoppers/sec. Same voltage across each, but current per branch differs.`;
+  } else if(game.mode==='parallel' && new Set(game.R.slice(0,game.N)).size===1){
+    tip = `Parallel with identical shops: each shop draws V/R = ${(game.V/game.R[0]).toFixed(2)} A. Total = N × that. Voltage per branch stays = ${game.V.toFixed(0)} V.`;
+  } else if(P > 40){
+    tip = `⚡ Very bright — total power = ${P.toFixed(1)} W. In a real circuit this much heat = a working kettle.`;
+  } else {
+    tip = `Try adding a shop, or setting shops to different prices. Watch how "coins per second" and "coins per shop" respond.`;
+  }
+  toast(tip, 4000);
+}
+
+/* =========================================================
+   BADGES + TOAST
+   ========================================================= */
+let toastTimer = null;
+function toast(msg, ms=2400){
+  const t = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function unlockBadge(key, msg){
+  if(game.badges[key]) return;
+  game.badges[key] = true;
+  const el = document.querySelector(`.badge[data-b="${key}"]`);
+  if(el) el.classList.add('earned');
+  toast('🏅 Badge unlocked: ' + msg);
+}
+
+/* =========================================================
+   SHOPPER SIMULATION
+   ========================================================= */
+// A shopper walks along a path. In series: single path passing every shop.
+// In parallel: shopper picks a branch (weighted by current) and only visits that shop.
+// currentCoins is initially V, and decrements by V_perShop[i] each time they cross a shop.
+// When they arrive back at the bank (t>=1), we count them and increment score.
+
+function spawnShopper(){
+  const c = circuit();
+  let branchIdx = 0;
+  if(game.mode==='parallel'){
+    // pick a branch weighted by I_perBranch
+    const r = Math.random() * c.I_total;
+    let acc = 0;
+    for(let i=0;i<game.N;i++){
+      acc += c.I_perBranch[i];
+      if(r < acc){ branchIdx = i; break; }
+    }
+  }
+  game.shoppers.push({
+    id: game.nextId++,
+    t: 0,
+    branchIdx,
+    startCoins: game.V,
+    coins: game.V,
+    lastShopPassed: -1 // index of last shop we deducted at
+  });
+}
+
+function updateShoppers(){
+  if(game.paused) return;
+  const c = circuit();
+  const sp = game.speed;
+  // spawn rate: I_total shoppers per second at 1x, scaled by speed
+  game.spawnAcc += (c.I_total * sp) / 30;
+  while(game.spawnAcc >= 1){
+    spawnShopper();
+    game.spawnAcc -= 1;
+  }
+  // Advance each shopper, scaled by speed
+  const dt = 0.006 * sp; // ~5 seconds to traverse at 1x, 20s at 0.25x
+  for(let i=game.shoppers.length-1;i>=0;i--){
+    const s = game.shoppers[i];
+    s.t += dt;
+    // Determine which shops they've passed since last update
+    const shopTs = shopPositionsOnPath(c.mode, s.branchIdx);
+    for(let k=0;k<shopTs.length;k++){
+      if(s.lastShopPassed < k && s.t > shopTs[k]){
+        // Deduct coins for this shop
+        const shopIdx = shopIndexOnPath(c.mode, s.branchIdx, k);
+        const cost = c.V_perShop[shopIdx];
+        s.coins = Math.max(0, s.coins - cost);
+        s.lastShopPassed = k;
+      }
+    }
+    if(s.t >= 1){
+      // Arrived back at bank
+      if(s.coins < 0.5){
+        game.score.perfect++;
+        if(!game.badges.first){ unlockBadge('first','🥇 First perfect drain — voltage used up.'); }
+      } else {
+        game.score.wasted++;
+      }
+      game.score.totalCoins += (s.startCoins - s.coins);
+      game.shoppers.splice(i, 1);
+    }
+  }
+  updateScoreboard();
+}
+
+// Where along the path (t=0..1) is each shop this shopper crosses?
+function shopPositionsOnPath(mode, branchIdx){
+  if(mode === 'series'){
+    // N shops evenly spaced on the top of the loop (t=0.15..0.55)
+    const spots = [];
+    for(let k=0;k<game.N;k++) spots.push(0.15 + (0.55-0.15)*((k+0.5)/game.N));
+    return spots;
+  } else {
+    // Parallel: only ONE shop on this branch, at t=0.35 (midway on the up-side)
+    return [0.35];
+  }
+}
+function shopIndexOnPath(mode, branchIdx, kInPath){
+  if(mode==='series') return kInPath;
+  return branchIdx;
+}
+
+/* =========================================================
+   CANVAS RENDER
+   ========================================================= */
+const cv = document.getElementById('stage');
+const ctx = cv.getContext('2d');
+let phase = 0;
+
+function draw(){
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0,0,w,h);
+  const c = circuit();
+  const {mode} = c;
+
+  // ---- Draw circuit skeleton ----
+  // The "street" is a rounded rectangle path (clockwise from bank at left middle)
+  // For series: single loop with N shops on the top edge
+  // For parallel: bus bar at top and bottom, N vertical branches, each with 1 shop
+  const bankX = 90, bankY = h/2;
+
+  // Bank (battery)
+  drawBank(ctx, bankX, bankY, game.V);
+
+  if(mode==='series'){
+    // Draw loop rectangle from bank
+    const topY = 110, botY = h-90;
+    const rightX = w-70;
+    // Path
+    drawWire(ctx, [
+      {x:bankX+30, y:topY},
+      {x:rightX, y:topY},
+      {x:rightX, y:botY},
+      {x:bankX+30, y:botY}
+    ]);
+    // Draw N shops on top wire
+    const shopY = topY;
+    const spanX = rightX - (bankX+80);
+    for(let k=0;k<game.N;k++){
+      const x = (bankX+80) + spanX*((k+0.5)/game.N);
+      const price = c.V_perShop[k];
+      const emoji = ['🏪','🍩','🎩'][k];
+      const earn = price * c.I_total; // power at this shop
+      drawShop(ctx, x, shopY, game.R[k], price, emoji, earn);
+    }
+    // Draw shoppers along the path
+    for(const s of game.shoppers){
+      const pos = seriesPathPos(s.t, bankX, bankY, topY, botY, rightX);
+      drawShopper(ctx, pos.x, pos.y, s.coins, s.startCoins);
+    }
+    // Direction arrow
+    drawArrow(ctx, (bankX+80+rightX)/2, topY-30, 1, "current →");
+  } else {
+    // Parallel: bank on left, bus splits into N vertical branches
+    const topY = 110, botY = h-90;
+    const busLeftX = bankX + 30;
+    const busRightX = w - 90;
+    // top bus
+    drawWire(ctx, [{x:busLeftX, y:topY}, {x:busRightX, y:topY}]);
+    // bottom bus
+    drawWire(ctx, [{x:busLeftX, y:botY}, {x:busRightX, y:botY}]);
+    // left rail from bank up to topY and down to botY
+    drawWire(ctx, [{x:busLeftX, y:bankY-20}, {x:busLeftX, y:topY}]);
+    drawWire(ctx, [{x:busLeftX, y:bankY+20}, {x:busLeftX, y:botY}]);
+    // right rail (return)
+    drawWire(ctx, [{x:busRightX, y:topY}, {x:busRightX, y:botY}]);
+    // N branches
+    const spacing = (busRightX - busLeftX - 40) / (game.N + 1);
+    for(let k=0;k<game.N;k++){
+      const bx = busLeftX + 20 + spacing * (k+1);
+      drawWire(ctx, [{x:bx, y:topY}, {x:bx, y:botY}]);
+      const emoji = ['🏪','🍩','🎩'][k];
+      const earn = c.V_perShop[k] * c.I_perBranch[k];
+      drawShop(ctx, bx, (topY+botY)/2, game.R[k], c.V_perShop[k], emoji, earn);
+    }
+    // Draw shoppers along the path (branch-dependent)
+    for(const s of game.shoppers){
+      const bx = busLeftX + 20 + spacing * (s.branchIdx+1);
+      const pos = parallelPathPos(s.t, busLeftX, bx, bankY, topY, botY);
+      drawShopper(ctx, pos.x, pos.y, s.coins, s.startCoins);
+    }
+    // Direction arrow on top bus
+    drawArrow(ctx, (busLeftX+busRightX)/2, topY-30, 1, "current →");
+  }
+}
+
+function seriesPathPos(t, bankX, bankY, topY, botY, rightX){
+  // Loop segments: [bank↑, →top, ↓right, ←bottom, bank↓]
+  // Distribute t across segments approximately
+  const L1 = 0.08, L2 = 0.42, L3 = 0.08, L4 = 0.34, L5 = 0.08;
+  if(t < L1){
+    const k = t/L1;
+    return {x: bankX+30, y: bankY - k*(bankY-topY)};
+  }
+  if(t < L1+L2){
+    const k = (t-L1)/L2;
+    return {x: bankX+30 + k*(rightX - (bankX+30)), y: topY};
+  }
+  if(t < L1+L2+L3){
+    const k = (t-L1-L2)/L3;
+    return {x: rightX, y: topY + k*(botY-topY)*0.5};
+  }
+  if(t < L1+L2+L3+L4){
+    const k = (t-L1-L2-L3)/L4;
+    const midY = topY + (botY-topY)*0.5;
+    // continue vertical down to botY then across
+    if(k < 0.15){
+      return {x: rightX, y: midY + (k/0.15)*(botY-midY)};
+    }
+    const kk = (k-0.15)/0.85;
+    return {x: rightX - kk*(rightX-(bankX+30)), y: botY};
+  }
+  const k = (t-L1-L2-L3-L4)/L5;
+  return {x: bankX+30, y: botY - k*(botY-bankY)};
+}
+
+function parallelPathPos(t, busLeftX, branchX, bankY, topY, botY){
+  // Path: bank+ up left rail → across top bus → down branch → up? No wait.
+  // Better: bank+(top) → up left rail to topY → right along top bus to branchX → down branch → left along bottom bus back to busLeftX → up left rail down half to bankY
+  // Simpler segments:
+  const L1 = 0.06; // bank+ to topY
+  const L2 = 0.14; // topY across to branchX
+  const L3 = 0.50; // down branch
+  const L4 = 0.14; // bottom bus back to busLeftX
+  const L5 = 0.06; // up to bank-
+  if(t < L1){
+    const k = t/L1;
+    return {x: busLeftX, y: bankY-20 - k*(bankY-20 - topY)};
+  }
+  if(t < L1+L2){
+    const k = (t-L1)/L2;
+    return {x: busLeftX + k*(branchX - busLeftX), y: topY};
+  }
+  if(t < L1+L2+L3){
+    const k = (t-L1-L2)/L3;
+    return {x: branchX, y: topY + k*(botY-topY)};
+  }
+  if(t < L1+L2+L3+L4){
+    const k = (t-L1-L2-L3)/L4;
+    return {x: branchX - k*(branchX - busLeftX), y: botY};
+  }
+  const k = (t-L1-L2-L3-L4)/L5;
+  return {x: busLeftX, y: botY - k*(botY - (bankY+20))};
+}
+
+/* ---- Primitives ---- */
+function drawBank(ctx, x, y, V){
+  // battery symbol vertical
+  ctx.strokeStyle = '#FAD53C'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(x-18, y-18); ctx.lineTo(x-18, y+18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-10, y-10); ctx.lineTo(x-10, y+10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y-18);    ctx.lineTo(x, y+18);    ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+10, y-10); ctx.lineTo(x+10, y+10); ctx.stroke();
+  // bank icon and label
+  ctx.font = '30px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🏦', x-50, y-40);
+  ctx.font = 'bold 16px "Open Sans", sans-serif';
+  ctx.fillStyle = '#FAD53C';
+  ctx.fillText(`BANK`, x-50, y-14);
+  ctx.font = 'bold 22px "JetBrains Mono", monospace';
+  ctx.fillText(`+${V}V`, x-50, y+12);
+  ctx.font = '12px "Open Sans", sans-serif';
+  ctx.fillStyle = '#9fb1d6';
+  ctx.fillText('(gives bags)', x-50, y+34);
+  ctx.fillText('(takes empty)', x-50, y+50);
+}
+
+function drawShop(ctx, x, y, R, priceV, emoji, earn){
+  // shop base
+  ctx.strokeStyle = '#00D8FC'; ctx.fillStyle = '#13183a';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(x-42, y-34, 84, 68, 10);
+  ctx.fill(); ctx.stroke();
+  // glow proportional to earnings
+  const glowR = Math.min(90, 30 + earn * 3);
+  if(earn > 0.5){
+    const g = ctx.createRadialGradient(x, y-6, 4, x, y-6, glowR);
+    g.addColorStop(0, `rgba(250,213,60,${Math.min(0.9, earn/25)})`);
+    g.addColorStop(1, 'rgba(250,213,60,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y-6, glowR, 0, Math.PI*2); ctx.fill();
+  }
+  // emoji front
+  ctx.font = '34px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(emoji, x, y-10);
+  // price tag
+  ctx.fillStyle = '#001372';
+  ctx.fillRect(x-38, y+14, 76, 20);
+  ctx.strokeStyle = '#FAD53C'; ctx.lineWidth = 1.5; ctx.strokeRect(x-38, y+14, 76, 20);
+  ctx.fillStyle = '#FAD53C';
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillText(`−${priceV.toFixed(1)} coins`, x, y+24);
+  // R below
+  ctx.fillStyle = '#00D8FC';
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillText(`R = ${R} Ω`, x, y+52);
+  // earnings above
+  ctx.fillStyle = earn > 0.5 ? '#FAD53C' : '#6c7da6';
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillText(`earns ${earn.toFixed(1)} W`, x, y-52);
+}
+
+function drawShopper(ctx, x, y, coins, startCoins){
+  const frac = startCoins>0 ? coins/startCoins : 0;
+  // Bag colour
+  const emoji = coins < 0.5 ? '👝' : '💰';
+  ctx.font = '32px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(emoji, x, y);
+  // Coin count badge
+  const cx = x + 22, cy = y - 22;
+  const bg = coins < 0.5 ? '#66BB6A' : (frac > 0.6 ? '#FAD53C' : '#FF6F00');
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.arc(cx, cy, 17, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#001372'; ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.fillStyle = '#001372';
+  ctx.font = 'bold 16px "JetBrains Mono", monospace';
+  ctx.fillText(coins.toFixed(0), cx, cy);
+}
+
+function drawWire(ctx, pts){
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#2a3170'; ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+  ctx.strokeStyle = '#0e1538'; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+}
+
+function drawArrow(ctx, x, y, dir, label){
+  ctx.strokeStyle = '#FF6F00'; ctx.lineWidth = 3;
+  const l = 44;
+  ctx.beginPath();
+  ctx.moveTo(x-l/2, y); ctx.lineTo(x+l/2, y);
+  ctx.moveTo(x+l/2, y); ctx.lineTo(x+l/2 - 8, y-6);
+  ctx.moveTo(x+l/2, y); ctx.lineTo(x+l/2 - 8, y+6);
+  ctx.stroke();
+  ctx.fillStyle = '#FF6F00';
+  ctx.font = 'bold 15px "Open Sans", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText(label, x, y-8);
+}
+
+// polyfill for roundRect
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.beginPath();
+    this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);
+    this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);
+    this.arcTo(x,y,x+w,y,r);
+    this.closePath();
+    return this;
+  };
+}
+
+/* =========================================================
+   CHALLENGE MODE — five levels, each with a target metric
+   =========================================================
+   Each level defines:
+     title, goal   — human-readable prompts
+     setup(game)   — pre-configures the circuit
+     check(c)      — returns {done, progressPct 0..100, currentLabel, hint}
+   The game continuously evaluates check() and unlocks the next level.
+*/
+const LEVELS = [
+  {
+    title: 'Level 1 — Warm up the lamp',
+    // Starts at I = 6/8 = 0.75 A (well below the 2 A target). Student must lower R.
+    goal: 'ONE series shop, 6-coin bag. Get the current to at least 2.0 A. Move the Shop A slider LEFT.',
+    setup: (g)=>{ g.mode='series'; g.N=1; g.V=6; g.R=[8,4,4]; },
+    check: (c)=>{
+      const target = 2.0;
+      const pct = Math.min(100, c.I_total/target*100);
+      return {done: c.I_total >= target, progressPct: pct,
+        currentLabel: `Current: ${c.I_total.toFixed(2)} A / ${target} A`,
+        hint: 'Lower R → higher I. Try R = 3 Ω or less.'};
+    }
+  },
+  {
+    title: 'Level 2 — Split the coins evenly',
+    // Starts with unequal R (2/3/7) so drops are 1/1.5/3.5 (NOT 4/4/4). Student must equalize sliders.
+    goal: 'Series, 3 shops on a 12-coin bag. Make every shop take EXACTLY 4 coins per shopper.',
+    setup: (g)=>{ g.mode='series'; g.N=3; g.V=12; g.R=[2,3,7]; },
+    check: (c)=>{
+      if(c.mode!=='series' || game.N!==3 || game.V!==12) return {done:false, progressPct:0,
+        currentLabel:'—', hint:'Switch to Series, set 3 shops, V=12.'};
+      const target = 4;
+      const dev = c.V_perShop.reduce((s,v)=>s+Math.abs(v-target),0);
+      const ok = dev < 0.05;
+      const pct = Math.max(0, 100 - dev*15);
+      return {done: ok, progressPct: pct,
+        currentLabel: `Shop drops: ${c.V_perShop.map(v=>v.toFixed(1)).join(' / ')} coins`,
+        hint: 'All three sliders equal → each shop takes V/N = 12/3 = 4 coins.'};
+    }
+  },
+  {
+    title: 'Level 3 — Cheap vs pricey (3:1 ratio)',
+    // Starts with equal R (all 4Ω) → ratio 1×. Student must set to R=[2,4,6] to hit ratio 3×.
+    goal: 'Series, 12-coin bag, 3 shops. Set the sliders so the priciest shop takes THREE TIMES what the cheapest takes.',
+    setup: (g)=>{ g.mode='series'; g.N=3; g.V=12; g.R=[4,4,4]; },
+    check: (c)=>{
+      if(c.mode!=='series' || game.N!==3) return {done:false, progressPct:0,
+        currentLabel:'—', hint:'Switch to Series with 3 shops.'};
+      const sorted = [...c.V_perShop].sort((a,b)=>a-b);
+      const r = sorted[2] / Math.max(0.01, sorted[0]);
+      const ok = r > 2.9 && r < 3.1;
+      const pct = ok ? 100 : Math.min(90, 100 - Math.abs(r-3)*30);
+      return {done: ok, progressPct: pct,
+        currentLabel: `Ratio (biggest/smallest) = ${r.toFixed(2)}× — target 3.00×`,
+        hint: 'Try R = 2 Ω, 4 Ω, 6 Ω. V drop scales with R at the same current.'};
+    }
+  },
+  {
+    title: 'Level 4 — Flood the mall',
+    // Starts at I_total = 9/8 × 3 = 3.375 A (below 6A target). Student must lower shop R values.
+    goal: 'Parallel: 3 branches on a 9-coin bag. Get TOTAL current from the bank to at least 6.0 A.',
+    setup: (g)=>{ g.mode='parallel'; g.N=3; g.V=9; g.R=[8,8,8]; },
+    check: (c)=>{
+      if(c.mode!=='parallel') return {done:false, progressPct:0,
+        currentLabel:'—', hint:'Switch to Parallel mode.'};
+      const target = 6.0;
+      const pct = Math.min(100, c.I_total/target*100);
+      return {done: c.I_total >= target, progressPct: pct,
+        currentLabel: `Total current: ${c.I_total.toFixed(2)} A / ${target} A`,
+        hint: 'Total I = sum of (V/R) across branches. Drop the R sliders.'};
+    }
+  },
+  {
+    title: 'Level 5 — Power engineer',
+    // Starts at V=3, R=[8] → P = 3 × 3/8 = 1.125W (far from 24W target). Open-ended solve.
+    goal: 'Any topology, ANY R. Deliver EXACTLY 24.0 W of total power (± 0.5 W). Multiple correct configurations exist!',
+    setup: (g)=>{ g.mode='series'; g.N=1; g.V=3; g.R=[8,4,4]; },
+    check: (c)=>{
+      const P = game.V * c.I_total;
+      const target = 24.0;
+      const dev = Math.abs(P - target);
+      const ok = dev < 0.5;
+      const pct = Math.max(0, 100 - dev*4);
+      return {done: ok, progressPct: pct,
+        currentLabel: `Total power: ${P.toFixed(2)} W / ${target} W`,
+        hint: 'P = V × I. e.g. V=12, series N=1, R=6 → I=2A → P=24W. Or parallel V=6, N=2, R=[3,3] → I=4A → P=24W.'};
+    }
+  }
+];
+
+function updateChallenge(){
+  if(!game.challenge.active) return;
+  const lvl = LEVELS[game.challenge.level];
+  if(!lvl) return;
+  const c = circuit();
+  const res = lvl.check(c);
+  document.getElementById('ch-title').textContent = lvl.title;
+  document.getElementById('ch-goal').textContent = lvl.goal;
+  document.getElementById('ch-level').textContent = game.challenge.level + 1;
+  document.getElementById('ch-bar').style.width = Math.min(100, Math.max(0, res.progressPct)) + '%';
+  document.getElementById('ch-progress').textContent = res.currentLabel;
+  document.getElementById('ch-hint').textContent = res.hint;
+  if(res.done){
+    game.challenge.elapsed++;
+    if(game.challenge.elapsed > 15){ // must hold for ~0.5s at 30fps to prevent flicker completions
+      levelComplete();
+      game.challenge.elapsed = 0;
+    }
+  } else {
+    game.challenge.elapsed = 0;
+  }
+}
+
+function toggleChallenge(){
+  game.challenge.active = !game.challenge.active;
+  document.getElementById('ch-toggle').textContent = game.challenge.active ? '⏹ Exit challenge' : '🎮 Start challenge';
+  document.getElementById('challenge-body').style.display = game.challenge.active ? '' : 'none';
+  if(game.challenge.active){
+    game.challenge.level = 0;
+    game.challenge.elapsed = 0;
+    LEVELS[0].setup(game);
+    bind();
+    toast('🎮 Challenge started — Level 1');
+  }
+}
+function nextLevel(){
+  if(!game.challenge.active) return;
+  if(game.challenge.level < LEVELS.length - 1){
+    game.challenge.level++;
+    game.challenge.elapsed = 0;
+    LEVELS[game.challenge.level].setup(game);
+    bind();
+    toast(`⏭ Skipped to Level ${game.challenge.level+1}`);
+  } else {
+    toast('You are on the final level!');
+  }
+}
+function resetChallenge(){
+  game.challenge.level = 0;
+  game.challenge.elapsed = 0;
+  LEVELS[0].setup(game);
+  bind();
+  toast('↺ Restarted from Level 1');
+}
+function levelComplete(){
+  toast(`✅ Level ${game.challenge.level+1} complete!`, 3000);
+  if(game.challenge.level < LEVELS.length - 1){
+    game.challenge.level++;
+    LEVELS[game.challenge.level].setup(game);
+    bind();
+  } else {
+    toast('🏆 All 5 levels complete! You mastered circuit economics.', 4500);
+    if(!game.badges.challenge){ unlockBadge('challenge', '🏆 All 5 levels complete!'); }
+    game.challenge.active = false;
+    document.getElementById('ch-toggle').textContent = '🎮 Start challenge';
+    document.getElementById('challenge-body').style.display = 'none';
+  }
+}
+
+/* =========================================================
+   MAIN TICK
+   ========================================================= */
+function tick(){
+  phase += 0.05;
+  try{
+    updateShoppers();
+    updateChallenge();
+    draw();
+  }catch(e){ console.error('tick error', e); }
+}
+
+// Kickoff
+bind();
+setInterval(tick, 33);
+</script>
+</body>
+</html>
