@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thermal Processes Simulator — Ch 7 (NA)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#0a0a0a; --card:#171717; --card2:#262626;
+  --orange:#f97316; --orange-br:#fb923c;
+  --txt:#ffffff; --txt2:#a3a3a3; --muted:#737373; --bdr:#404040;
+  --gold:#f97316; --cyan:#fb923c; --rose:#ea580c;
+  --green:#f97316; --violet:#a3a3a3; --info:#d4d4d4;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit',sans-serif;overflow-x:hidden;line-height:1.5}
+.header{position:relative;background:linear-gradient(135deg,#000 0%,#1a1a1a 50%,#262626 100%);border-bottom:1px solid var(--bdr);padding:28px 20px;text-align:center;overflow:hidden}
+.header::before{content:"";position:absolute;top:-30%;left:-10%;width:60%;height:200%;background:radial-gradient(ellipse,rgba(249,115,22,0.15) 0%,transparent 60%);pointer-events:none}
+.header::after{content:"";position:absolute;top:-30%;right:-10%;width:60%;height:200%;background:radial-gradient(ellipse,rgba(249,115,22,0.08) 0%,transparent 60%);pointer-events:none}
+.header h1{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--orange);margin-bottom:4px;position:relative;z-index:1}
+.header p{color:var(--txt2);font-size:.95rem;position:relative;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:16px}
+.section{background:var(--card);border:1px solid var(--bdr);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.section-bar{height:3px;background:linear-gradient(90deg,var(--orange),var(--orange-br),#fff)}
+.section-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--orange);padding:14px 18px 0}
+.section-body{padding:14px 18px 18px}
+.info-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.info-row input{background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;flex:1;min-width:120px}
+.info-row input:focus{outline:none;border-color:var(--orange)}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .2s}
+.btn-gold{background:var(--orange);color:#000}.btn-gold:hover{background:var(--orange-br)}
+.btn-cyan{background:#fff;color:#000}.btn-cyan:hover{background:#e5e5e5}
+.btn-rose{background:#404040;color:#fff;border:1px solid var(--orange)}.btn-rose:hover{background:#525252}
+.btn-green{background:var(--orange);color:#000}.btn-green:hover{background:var(--orange-br)}
+.btn-violet{background:#404040;color:#fff}.btn-violet:hover{background:#525252}
+.btn-outline{background:transparent;border:1px solid var(--bdr);color:var(--txt2)}.btn-outline:hover{border-color:var(--orange);color:var(--orange)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+textarea{width:100%;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:10px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;resize:vertical;min-height:60px}
+textarea:focus{outline:none;border-color:var(--orange)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;border-bottom:1px solid var(--bdr);padding-bottom:6px}
+.tab{padding:10px 18px;border-radius:8px 8px 0 0;background:var(--card2);color:var(--txt2);font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;border:1px solid var(--bdr)}
+.tab.active{background:var(--orange);color:#000;border-color:var(--orange)}
+.tab-icon{font-size:1rem}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* Intro card */
+.intro-card{background:linear-gradient(135deg,rgba(249,115,22,0.10),rgba(249,115,22,0.03));border:1px solid var(--orange);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.intro-card h3{color:var(--orange);font-family:'DM Serif Display',serif;font-size:1.05rem;margin-bottom:6px}
+.intro-card p{color:var(--txt2);font-size:.88rem;margin-bottom:10px}
+.intro-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+@media(max-width:700px){.intro-steps{grid-template-columns:1fr}}
+.intro-step{background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;font-size:.82rem;color:var(--txt2)}
+.intro-step-num{background:var(--orange);color:#000;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:.8rem;flex-shrink:0}
+.intro-dismiss{text-align:right}
+
+/* Sim wrapper */
+.sim-wrapper{display:grid;grid-template-columns:1fr 300px;gap:16px}
+@media(max-width:900px){.sim-wrapper{grid-template-columns:1fr}.controls-panel{order:-1}}
+.sim-canvas{background:radial-gradient(ellipse at center,#262626 0%,#171717 55%,#0a0a0a 100%);border-radius:12px;border:1px solid var(--bdr);position:relative;overflow:hidden}
+.sim-canvas canvas{display:block;width:100%;height:100%}
+
+/* Graph layout for equilibrium: two stacked canvases */
+.graph-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.graph-layout{grid-template-columns:1fr}}
+.graph-layout .sim-canvas{height:340px}
+
+/* Controls */
+.controls-panel{display:flex;flex-direction:column;gap:10px}
+.ctrl-card{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:12px}
+.ctrl-label{font-weight:600;font-size:.85rem;color:var(--txt2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.ctrl-val{font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700}
+input[type=range]{width:100%;height:6px;-webkit-appearance:none;background:var(--bdr);border-radius:3px;outline:none;margin:4px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer;background:var(--orange)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;cursor:pointer;background:var(--orange);border:none}
+.ctrl-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.seg-row{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.seg-btn{flex:1;padding:6px 8px;background:var(--card);border:1px solid var(--bdr);color:var(--txt2);border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;font-family:'Outfit',sans-serif;min-width:60px;transition:all .2s}
+.seg-btn.active{background:var(--orange);color:#000;border-color:var(--orange)}
+.seg-btn:hover{border-color:var(--orange)}
+
+/* Presets */
+.preset-label{font-size:.78rem;color:var(--muted);margin-top:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.preset-row{display:flex;gap:6px;flex-wrap:wrap}
+.preset-chip{padding:6px 10px;background:var(--card2);border:1px solid var(--bdr);color:var(--txt2);border-radius:16px;font-size:.75rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+.preset-chip:hover{border-color:var(--orange);color:var(--orange)}
+
+/* Story card */
+.story-card{background:linear-gradient(135deg,#262626,#171717);border:1px solid var(--orange);border-radius:12px;padding:16px;margin-bottom:10px}
+.story-headline{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.story-emoji{font-size:1.8rem}
+.story-title{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--orange)}
+.story-text{color:var(--txt);font-size:.92rem;margin-bottom:8px}
+.story-text strong{color:var(--orange-br)}
+.story-why{color:var(--txt2);font-size:.82rem;font-style:italic;border-top:1px dashed var(--bdr);padding-top:8px}
+
+/* Observe details */
+.numbers{margin-top:10px}
+.numbers summary{cursor:pointer;color:var(--txt2);font-size:.82rem;padding:6px 10px;background:var(--card2);border-radius:6px;border:1px solid var(--bdr);font-weight:600;list-style:none}
+.numbers summary::-webkit-details-marker{display:none}
+.numbers summary::before{content:"▸ ";color:var(--orange)}
+.numbers[open] summary::before{content:"▾ "}
+.numbers > div{padding:10px 0}
+.obs-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.obs-table th{background:var(--card2);color:var(--orange);padding:8px;text-align:left;border:1px solid var(--bdr);font-weight:600}
+.obs-table td{padding:7px 8px;border:1px solid var(--bdr);font-family:'JetBrains Mono',monospace}
+.obs-table tr:nth-child(even){background:rgba(255,255,255,.03)}
+
+/* Snapshots */
+.snap-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.snap-table th{background:var(--card2);color:var(--orange-br);padding:6px 8px;border:1px solid var(--bdr);text-align:center}
+.snap-table td{padding:5px 8px;border:1px solid var(--bdr);text-align:center;font-family:'JetBrains Mono',monospace}
+
+/* Badges */
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--bdr);transition:all .3s}
+.badge.earned{animation:badgePop .4s ease;border-color:var(--orange);color:var(--orange);background:rgba(249,115,22,.1)}
+
+/* Confetti */
+.confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
+.confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}
+
+/* Notification */
+.notif{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:10px;z-index:1000;animation:slideIn .3s ease;backdrop-filter:blur(10px);max-width:320px}
+.notif.success{background:rgba(249,115,22,.2);border:1px solid rgba(249,115,22,.4);color:var(--orange-br)}
+.notif.warning{background:rgba(234,88,12,.2);border:1px solid rgba(234,88,12,.4);color:var(--orange)}
+.notif.info{background:rgba(212,212,212,.15);border:1px solid rgba(212,212,212,.3);color:var(--info)}
+.ntitle{font-weight:700;font-size:.9rem}.nmsg{font-size:.8rem;margin-top:2px;opacity:.8}
+
+/* Mission bar for game */
+.mission-bar{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.mission-time{font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;font-size:1.1rem}
+.mission-time small{color:var(--muted);font-weight:400;font-size:.75rem}
+.mission-label{font-size:.8rem;color:var(--txt2);margin-bottom:4px;display:flex;justify-content:space-between}
+.mission-label span{color:var(--orange);font-family:'JetBrains Mono',monospace}
+.stabbar{background:#171717;border:1px solid var(--bdr);border-radius:6px;height:16px;overflow:hidden}
+.stabfill{height:100%;transition:width .3s ease;font-size:.72rem;font-weight:700;color:#000;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.mission-controls{display:flex;gap:6px}
+
+/* Vertex buttons for thermos features */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px}
+.v-btn{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:10px;cursor:pointer;transition:all .2s;text-align:left;font-family:'Outfit',sans-serif;color:var(--txt)}
+.v-btn:hover{border-color:var(--orange);transform:translateY(-1px)}
+.v-btn.on{border-color:var(--orange);background:rgba(249,115,22,0.12)}
+.v-btn-emoji{font-size:1.4rem;margin-bottom:4px}
+.v-btn-title{font-weight:700;font-size:.85rem;margin-bottom:2px}
+.v-btn-sub{font-size:.72rem;color:var(--muted)}
+.v-btn.on .v-btn-title{color:var(--orange)}
+
+.event-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-top:8px}
+.event-btn{background:var(--card2);border:1px solid var(--bdr);color:var(--txt2);border-radius:8px;padding:8px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;transition:all .2s;text-align:center}
+.event-btn:hover{border-color:var(--orange);color:var(--orange)}
+
+/* Print */
+@media print{
+  @page{margin:2.5cm 1.5cm 1cm 1.5cm}
+  body{background:#fff;color:#000}
+  .no-print,canvas,.tabs,.tab,.btn,.mission-bar,.intro-card{display:none!important}
+  .section{border:2px solid #333!important;background:#fff!important;break-inside:avoid}
+  .section-title{color:#000!important}
+  .story-card{background:#f5f5f5!important;-webkit-print-color-adjust:exact;border:1px solid #999!important;color:#000!important}
+  .story-title,.story-emoji{color:#000!important}
+  .story-text,.story-why{color:#222!important}
+  .story-text strong{color:#000!important}
+  textarea{border:1.5px solid #333!important;background:#fafafa!important;color:#000!important;-webkit-print-color-adjust:exact}
+  .header{background:#eee!important;-webkit-print-color-adjust:exact}
+  .header h1,.header p{color:#000!important}
+  .header::before,.header::after{display:none!important}
+  .tab-panel{display:block!important;page-break-before:always}
+  .tab-panel:first-of-type{page-break-before:auto}
+  .print-questions{display:block!important;page-break-before:always}
+  .no-screen{display:block!important}
+}
+.no-screen{display:none}
+.print-questions{display:none}
+
+/* Learning log */
+.log-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){.log-grid{grid-template-columns:1fr}}
+.log-cell label{display:block;font-size:.82rem;color:var(--txt2);margin-bottom:4px;font-weight:600}
+.vocab-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.vocab-row input{flex:1;min-width:100px;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem}
+.vocab-row input:focus{outline:none;border-color:var(--orange)}
+
+@keyframes badgePop{0%{transform:scale(.5)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔥 Thermal Processes</h1>
+  <p>Sec 3 Science (NA) — Chapter 7 · Conduction · Convection · Radiation · Thermal Equilibrium</p>
+</div>
+
+<div class="container">
+
+<!-- Student Info -->
+<div class="section no-print">
+  <div class="section-bar"></div>
+  <div class="section-body">
+    <div class="info-row">
+      <input type="text" id="username" placeholder="Username (e.g. lloyd_ng)">
+      <input type="text" id="displayName" placeholder="Display name">
+      <button class="btn btn-gold btn-sm" onclick="saveState()">💾 Save</button>
+      <button class="btn btn-cyan btn-sm" onclick="loadState()">↻ Load</button>
+      <button class="btn btn-rose btn-sm" onclick="resetState()">Reset</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- POE: Predict -->
+<div class="section">
+  <div class="section-bar"></div>
+  <div class="section-title">🔮 Predict</div>
+  <div class="section-body">
+    <p style="font-size:.88rem;color:var(--txt2);margin-bottom:8px">Before you play with the simulator, jot down your thinking:</p>
+    <ul style="font-size:.85rem;color:var(--txt2);margin:0 0 10px 20px;line-height:1.7">
+      <li>If a hot metal block is placed in contact with a cold block, what happens to each temperature over time?</li>
+      <li>Why does a metal spoon in hot soup get hot faster than a wooden spoon?</li>
+      <li>Why does a shiny silver kettle stay warm longer than a matt black one?</li>
+    </ul>
+    <textarea id="predictText" rows="3" placeholder="Write your predictions here..."></textarea>
+  </div>
+</div>
+
+<!-- Simulation -->
+<div class="section no-print">
+  <div class="section-bar"></div>
+  <div class="section-title">🧪 Interactive Simulation</div>
+  <div class="section-body">
+
+    <div class="tabs">
+      <div class="tab active" data-tab="equilibrium" onclick="switchTab('equilibrium')">
+        <span class="tab-icon">🌡️</span> Equilibrium Lab
+        <small style="font-size:.7rem;color:var(--muted);margin-left:4px">academic</small>
+      </div>
+      <div class="tab" data-tab="modes" onclick="switchTab('modes')">
+        <span class="tab-icon">📡</span> Three Modes
+        <small style="font-size:.7rem;color:var(--muted);margin-left:4px">academic</small>
+      </div>
+      <div class="tab" data-tab="thermos" onclick="switchTab('thermos')">
+        <span class="tab-icon">☕</span> Thermos Challenge
+        <small style="font-size:.7rem;color:var(--muted);margin-left:4px">game</small>
+      </div>
+    </div>
+
+    <!-- ================= TAB 1: EQUILIBRIUM ================= -->
+    <div class="tab-panel active" id="tab-equilibrium">
+      <div class="intro-card" id="intro-equilibrium">
+        <h3>🌡️ What you'll explore</h3>
+        <p>Put a hot object in contact with a cold one. Watch energy flow from hot to cold until they reach the same temperature — <strong>thermal equilibrium</strong>.</p>
+        <div class="intro-steps">
+          <div class="intro-step"><div class="intro-step-num">1</div><div>Set the starting temperatures and the connector between the objects.</div></div>
+          <div class="intro-step"><div class="intro-step-num">2</div><div>Press ▶ Run and watch the temperature-time graph on the right.</div></div>
+          <div class="intro-step"><div class="intro-step-num">3</div><div>Notice: energy flows from hot → cold, never the reverse. Both settle at one final temperature.</div></div>
+        </div>
+        <div class="intro-dismiss">
+          <button class="btn btn-gold btn-sm" onclick="dismissIntro('equilibrium')">Got it 🚀</button>
+        </div>
+      </div>
+
+      <div class="graph-layout" style="margin-bottom:12px">
+        <div class="sim-canvas" style="height:340px"><canvas id="eqCanvas"></canvas></div>
+        <div class="sim-canvas" style="height:340px"><canvas id="eqGraph"></canvas></div>
+      </div>
+
+      <div class="sim-wrapper">
+        <div>
+          <div class="controls-panel">
+            <div class="ctrl-card">
+              <div class="ctrl-label">Object A starts at <span class="ctrl-val" id="eqValTA">90 °C</span></div>
+              <input type="range" id="eqSliderTA" min="0" max="100" step="1" value="90" oninput="eqUpdateSliders()">
+              <div class="ctrl-label" style="margin-top:8px">Object B starts at <span class="ctrl-val" id="eqValTB">10 °C</span></div>
+              <input type="range" id="eqSliderTB" min="0" max="100" step="1" value="10" oninput="eqUpdateSliders()">
+            </div>
+
+            <div class="ctrl-card">
+              <div class="ctrl-label">Connector between A and B</div>
+              <div class="seg-row">
+                <button class="seg-btn active" data-eq-conn="copper" onclick="eqSetConnector('copper')">🥉 Copper</button>
+                <button class="seg-btn" data-eq-conn="wood" onclick="eqSetConnector('wood')">🪵 Wood</button>
+                <button class="seg-btn" data-eq-conn="vacuum" onclick="eqSetConnector('vacuum')">🕳️ Vacuum</button>
+              </div>
+              <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Copper = fast conductor · Wood = poor conductor · Vacuum = no medium</div>
+            </div>
+
+            <div class="ctrl-card">
+              <div class="ctrl-label">Object A heat capacity <span class="ctrl-val" id="eqValCA">1×</span></div>
+              <input type="range" id="eqSliderCA" min="1" max="4" step="1" value="1" oninput="eqUpdateSliders()">
+              <div class="ctrl-label" style="margin-top:8px">Object B heat capacity <span class="ctrl-val" id="eqValCB">1×</span></div>
+              <input type="range" id="eqSliderCB" min="1" max="4" step="1" value="1" oninput="eqUpdateSliders()">
+              <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Bigger objects take longer to change temperature.</div>
+            </div>
+          </div>
+        </div>
+        <div class="controls-panel">
+          <div class="ctrl-card">
+            <div style="font-weight:700;color:var(--orange);font-size:.9rem;margin-bottom:8px">▶ Run the experiment</div>
+            <div class="ctrl-row">
+              <button class="btn btn-cyan btn-sm" id="eqPlayBtn" onclick="eqToggleRun()">▶️ Run</button>
+              <button class="btn btn-outline btn-sm" onclick="eqReset()">↺ Reset</button>
+              <button class="btn btn-gold btn-sm" onclick="recordSnapshot('equilibrium')">📸 Snapshot</button>
+            </div>
+            <div class="preset-label">Try a preset</div>
+            <div class="preset-row">
+              <button class="preset-chip" onclick="applyPreset('equilibrium','hotMetalColdBlock')">Hot metal + cold block</button>
+              <button class="preset-chip" onclick="applyPreset('equilibrium','coffeeInRoom')">Coffee cooling</button>
+              <button class="preset-chip" onclick="applyPreset('equilibrium','vacuumFlask')">Vacuum flask</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 2: THREE MODES ================= -->
+    <div class="tab-panel" id="tab-modes">
+      <div class="intro-card" id="intro-modes">
+        <h3>📡 What you'll explore</h3>
+        <p>Three ways heat moves: <strong>conduction</strong> (through solids), <strong>convection</strong> (through fluids), and <strong>radiation</strong> (through empty space).</p>
+        <div class="intro-steps">
+          <div class="intro-step"><div class="intro-step-num">1</div><div>Pick a mode: Conduction, Convection, or Radiation.</div></div>
+          <div class="intro-step"><div class="intro-step-num">2</div><div>Change materials, temperatures, and surfaces to see rate of energy transfer change.</div></div>
+          <div class="intro-step"><div class="intro-step-num">3</div><div>Watch the mechanism — vibrating atoms, rising fluid, or radiating waves — happen live.</div></div>
+        </div>
+        <div class="intro-dismiss">
+          <button class="btn btn-gold btn-sm" onclick="dismissIntro('modes')">Got it 🚀</button>
+        </div>
+      </div>
+
+      <div class="seg-row" style="margin-bottom:10px">
+        <button class="seg-btn active" data-mode-sub="conduction" onclick="modeSetSub('conduction')">🔥 Conduction</button>
+        <button class="seg-btn" data-mode-sub="convection" onclick="modeSetSub('convection')">💧 Convection</button>
+        <button class="seg-btn" data-mode-sub="radiation" onclick="modeSetSub('radiation')">📡 Radiation</button>
+      </div>
+
+      <div class="sim-wrapper">
+        <div class="sim-canvas" style="height:400px"><canvas id="modeCanvas"></canvas></div>
+        <div class="controls-panel" id="modeControls">
+          <!-- Conduction controls -->
+          <div class="ctrl-card" id="modeCtrl-conduction">
+            <div class="ctrl-label">Material of the rod</div>
+            <div class="seg-row">
+              <button class="seg-btn active" data-cond-mat="copper" onclick="modeSetCondMat('copper')">Copper</button>
+              <button class="seg-btn" data-cond-mat="iron" onclick="modeSetCondMat('iron')">Iron</button>
+              <button class="seg-btn" data-cond-mat="glass" onclick="modeSetCondMat('glass')">Glass</button>
+              <button class="seg-btn" data-cond-mat="wood" onclick="modeSetCondMat('wood')">Wood</button>
+            </div>
+            <div class="ctrl-label" style="margin-top:10px">Hot end temperature <span class="ctrl-val" id="condValT">100 °C</span></div>
+            <input type="range" id="condSliderT" min="30" max="200" step="5" value="100" oninput="modeUpdate()">
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Rate depends on ΔT, area, and material's thermal conductivity.</div>
+            <div class="preset-label">Try a preset</div>
+            <div class="preset-row">
+              <button class="preset-chip" onclick="applyPreset('conduction','metalSpoon')">Metal spoon in soup</button>
+              <button class="preset-chip" onclick="applyPreset('conduction','woodenSpoon')">Wooden spoon</button>
+              <button class="preset-chip" onclick="applyPreset('conduction','redHotIron')">Red-hot iron</button>
+            </div>
+          </div>
+
+          <!-- Convection controls -->
+          <div class="ctrl-card" id="modeCtrl-convection" style="display:none">
+            <div class="ctrl-label">Fluid heated from below</div>
+            <div class="seg-row">
+              <button class="seg-btn active" data-conv-fluid="water" onclick="modeSetConvFluid('water')">💧 Water</button>
+              <button class="seg-btn" data-conv-fluid="air" onclick="modeSetConvFluid('air')">💨 Air</button>
+            </div>
+            <div class="ctrl-label" style="margin-top:10px">Heater power <span class="ctrl-val" id="convValPow">Medium</span></div>
+            <input type="range" id="convSliderPow" min="0" max="10" step="1" value="5" oninput="modeUpdate()">
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Warm fluid expands → less dense → rises. Cool fluid sinks. A convection <em>current</em> forms.</div>
+            <div class="preset-label">Try a preset</div>
+            <div class="preset-row">
+              <button class="preset-chip" onclick="applyPreset('convection','boilingPot')">Boiling pot</button>
+              <button class="preset-chip" onclick="applyPreset('convection','seaBreeze')">Sea breeze (air)</button>
+              <button class="preset-chip" onclick="applyPreset('convection','offHeat')">Heater off</button>
+            </div>
+          </div>
+
+          <!-- Radiation controls -->
+          <div class="ctrl-card" id="modeCtrl-radiation" style="display:none">
+            <div class="ctrl-label">Surface type</div>
+            <div class="seg-row">
+              <button class="seg-btn active" data-rad-surf="matt" onclick="modeSetRadSurf('matt')">⚫ Matt black</button>
+              <button class="seg-btn" data-rad-surf="grey" onclick="modeSetRadSurf('grey')">🔘 Grey</button>
+              <button class="seg-btn" data-rad-surf="shiny" onclick="modeSetRadSurf('shiny')">✨ Shiny silver</button>
+            </div>
+            <div class="ctrl-label" style="margin-top:10px">Surface temperature <span class="ctrl-val" id="radValT">200 °C</span></div>
+            <input type="range" id="radSliderT" min="30" max="500" step="10" value="200" oninput="modeUpdate()">
+            <div class="ctrl-label" style="margin-top:8px">Surface area <span class="ctrl-val" id="radValA">1×</span></div>
+            <input type="range" id="radSliderA" min="1" max="4" step="1" value="1" oninput="modeUpdate()">
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Dark matt = better emitter. Higher T, larger A = more emission. No medium needed.</div>
+            <div class="preset-label">Try a preset</div>
+            <div class="preset-row">
+              <button class="preset-chip" onclick="applyPreset('radiation','blackKettle')">Black kettle</button>
+              <button class="preset-chip" onclick="applyPreset('radiation','silverFlask')">Silver flask</button>
+              <button class="preset-chip" onclick="applyPreset('radiation','sunRadiator')">Solar oven</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: THERMOS CHALLENGE (GAME) ================= -->
+    <div class="tab-panel" id="tab-thermos">
+      <div class="intro-card" id="intro-thermos">
+        <h3>☕ Build a thermos flask that keeps coffee hot</h3>
+        <p>Your coffee starts at 80 °C. Ambient room is 25 °C. You have 60 seconds. Toggle design features to <strong>reduce conduction, convection, and radiation</strong>. Beat the target!</p>
+        <div class="intro-steps">
+          <div class="intro-step"><div class="intro-step-num">1</div><div>Turn on features (cover, vacuum, silvered lining, insulated base, narrow mouth).</div></div>
+          <div class="intro-step"><div class="intro-step-num">2</div><div>Press ▶ Start. Watch the coffee temperature drop over 60 s.</div></div>
+          <div class="intro-step"><div class="intro-step-num">3</div><div>Keep it above 70 °C at the finish line to earn the Thermos Master badge.</div></div>
+        </div>
+        <div class="intro-dismiss">
+          <button class="btn btn-gold btn-sm" onclick="dismissIntro('thermos')">Got it 🚀</button>
+        </div>
+      </div>
+
+      <div class="mission-bar">
+        <div class="mission-time"><span id="thTime">0.0s</span> <small>of 60s</small></div>
+        <div class="mission-stability">
+          <div class="mission-label">Coffee temperature <span id="thTempLabel">80.0 °C</span></div>
+          <div class="stabbar"><div class="stabfill" id="thTempFill" style="width:100%;background:var(--orange)">80.0 °C</div></div>
+        </div>
+        <div class="mission-controls">
+          <button class="btn btn-cyan btn-sm" id="thPlayBtn" onclick="thToggleRun()">▶️ Start</button>
+          <button class="btn btn-outline btn-sm" onclick="thReset()">↺</button>
+        </div>
+      </div>
+
+      <div class="sim-wrapper">
+        <div class="sim-canvas" style="height:420px"><canvas id="thCanvas"></canvas></div>
+        <div class="controls-panel">
+          <div class="ctrl-card">
+            <div style="font-weight:700;color:var(--orange);font-size:.9rem;margin-bottom:8px">🛠️ Design features</div>
+            <div class="feature-grid">
+              <div class="v-btn" id="thFeat-cover" onclick="thToggleFeature('cover')">
+                <div class="v-btn-emoji">🧢</div><div class="v-btn-title">Insulating cover</div><div class="v-btn-sub">Blocks convection out the top</div>
+              </div>
+              <div class="v-btn" id="thFeat-vacuum" onclick="thToggleFeature('vacuum')">
+                <div class="v-btn-emoji">🕳️</div><div class="v-btn-title">Vacuum gap</div><div class="v-btn-sub">No particles → no conduction/convection</div>
+              </div>
+              <div class="v-btn" id="thFeat-silvered" onclick="thToggleFeature('silvered')">
+                <div class="v-btn-emoji">✨</div><div class="v-btn-title">Silvered inner walls</div><div class="v-btn-sub">Reflects radiation back inward</div>
+              </div>
+              <div class="v-btn" id="thFeat-insulatedBase" onclick="thToggleFeature('insulatedBase')">
+                <div class="v-btn-emoji">🧱</div><div class="v-btn-title">Insulated base</div><div class="v-btn-sub">Poor conductor at bottom</div>
+              </div>
+              <div class="v-btn" id="thFeat-narrowMouth" onclick="thToggleFeature('narrowMouth')">
+                <div class="v-btn-emoji">▽</div><div class="v-btn-title">Narrow mouth</div><div class="v-btn-sub">Less area for radiation & convection</div>
+              </div>
+            </div>
+          </div>
+          <div class="ctrl-card">
+            <div style="font-weight:700;color:var(--orange);font-size:.9rem;margin-bottom:8px">⚡ Shake-up events</div>
+            <div class="event-grid">
+              <button class="event-btn" onclick="thEvent('wind')">💨 Cold wind</button>
+              <button class="event-btn" onclick="thEvent('ice')">🧊 Ice cube</button>
+              <button class="event-btn" onclick="thEvent('sun')">☀️ Sunlight</button>
+              <button class="event-btn" onclick="thEvent('lid-off')">🎈 Lid pop</button>
+              <button class="event-btn" onclick="thEvent('hot-top-up')">🔥 Top-up</button>
+              <button class="event-btn" onclick="thEvent('draft')">🌬️ Draft</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- POE: Observe -->
+<div class="section">
+  <div class="section-bar"></div>
+  <div class="section-title">🔍 Observe</div>
+  <div class="section-body">
+    <div id="storyCardWrap">
+      <div class="story-card">
+        <div class="story-headline"><div class="story-emoji">👋</div><h3 class="story-title">Pick a scenario and press Run</h3></div>
+        <div class="story-text">The observation panel will describe what's happening in plain English once the simulator starts.</div>
+        <div class="story-why">Why this matters: exam questions ask you to <strong>describe the mechanism</strong>, not just name the mode.</div>
+      </div>
+    </div>
+    <details class="numbers">
+      <summary>🔢 Show the physics numbers</summary>
+      <div>
+        <table class="obs-table" id="obsTable">
+          <thead><tr><th>Quantity</th><th>Value</th><th>Unit / Note</th></tr></thead>
+          <tbody id="obsTableBody"><tr><td colspan="3" style="text-align:center;color:var(--muted)">(no data yet — run a simulation)</td></tr></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- Snapshots -->
+<div class="section no-print">
+  <div class="section-bar"></div>
+  <div class="section-title">📋 Snapshots</div>
+  <div class="section-body">
+    <p style="font-size:.82rem;color:var(--txt2);margin-bottom:8px">Record snapshots to compare scenarios later.</p>
+    <table class="snap-table" id="snapTable">
+      <thead><tr><th>#</th><th>Tab</th><th>Scenario</th><th>Key value</th><th>Note</th></tr></thead>
+      <tbody id="snapBody"><tr><td colspan="5" style="text-align:center;color:var(--muted)">(no snapshots yet)</td></tr></tbody>
+    </table>
+    <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="clearSnapshots()">Clear snapshots</button></div>
+  </div>
+</div>
+
+<!-- Badges -->
+<div class="section">
+  <div class="section-bar"></div>
+  <div class="section-title">🏅 Achievements</div>
+  <div class="section-body">
+    <div class="badge-row">
+      <div class="badge" id="badge-bronze">🥉 Bronze — Reach equilibrium</div>
+      <div class="badge" id="badge-silver">🥈 Silver — Tested all 3 modes</div>
+      <div class="badge" id="badge-gold">🥇 Gold — Kept coffee &gt; 70 °C</div>
+      <div class="badge" id="badge-event">⚡ Resilient — Survived an event</div>
+      <div class="badge" id="badge-master">🌟 Thermos Master — All above</div>
+    </div>
+  </div>
+</div>
+
+<!-- POE: Explain -->
+<div class="section">
+  <div class="section-bar"></div>
+  <div class="section-title">💭 Explain</div>
+  <div class="section-body">
+    <p style="font-size:.85rem;color:var(--txt2);margin-bottom:8px">Now that you've explored, explain in your own words:</p>
+    <ul style="font-size:.85rem;color:var(--txt2);margin:0 0 10px 20px;line-height:1.7">
+      <li>Why does a metal spoon conduct heat faster than a wooden one? Mention <strong>vibrating atoms</strong> and <strong>free electrons</strong>.</li>
+      <li>Why does hot water rise in a saucepan? Use the word <strong>density</strong> at least once.</li>
+      <li>Explain in one sentence why a vacuum flask reduces all three modes of heat transfer.</li>
+    </ul>
+    <textarea id="explainText" rows="4" placeholder="Write your explanation here..."></textarea>
+  </div>
+</div>
+
+<!-- Learning Log -->
+<div class="section">
+  <div class="section-bar"></div>
+  <div class="section-title">📝 Learning Log</div>
+  <div class="section-body">
+    <div class="log-grid">
+      <div class="log-cell">
+        <label>Something I learnt today</label>
+        <textarea id="logLearnt" rows="3" placeholder="I learnt that..."></textarea>
+      </div>
+      <div class="log-cell">
+        <label>Something still confusing</label>
+        <textarea id="logConfusing" rows="3" placeholder="I'm not sure why..."></textarea>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label style="display:block;font-size:.82rem;color:var(--txt2);margin-bottom:4px;font-weight:600">New vocabulary (3 words)</label>
+      <div class="vocab-row">
+        <input type="text" id="vocab1" placeholder="Word 1">
+        <input type="text" id="vocab2" placeholder="Word 2">
+        <input type="text" id="vocab3" placeholder="Word 3">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print-only analysis -->
+<div class="print-questions">
+  <div style="border:2px solid #333;padding:14px;margin-top:14px;background:#fff">
+    <h2 style="font-family:'DM Serif Display',serif;margin-bottom:10px">Analysis Questions (Print Worksheet)</h2>
+    <ol style="line-height:1.9;font-size:.95rem">
+      <li>Explain, using the words <strong>vibration of atoms</strong> and <strong>free electrons</strong>, why metals are better conductors of heat than wood. (3 marks)</li>
+      <li>Describe, using the word <strong>density</strong>, how a convection current forms in water heated from below. Use four labelled steps. (4 marks)</li>
+      <li>A student compares a matt-black kettle and a shiny-silver kettle at the same temperature. Which cools faster and why? State the three factors that affect the rate of radiation. (4 marks)</li>
+      <li>Draw a labelled cross-section of a vacuum flask. Explain how each design feature reduces conduction, convection, or radiation. (5 marks)</li>
+    </ol>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ============================================================================
+   CH07 THERMAL PROCESSES SIMULATOR
+   ============================================================================ */
+
+const INTRO_KEY = 'sciSim_ch07_intros';
+const STATE_PREFIX = 'sciSim_ch07';
+
+const gameState = {
+  currentTab: 'equilibrium',
+  introDismissed: { equilibrium: false, modes: false, thermos: false },
+
+  eq: {
+    TA_start: 90, TB_start: 10, TA: 90, TB: 10,
+    CA: 1, CB: 1,
+    connector: 'copper',
+    running: false,
+    time: 0,
+    history: [ ]
+  },
+
+  modes: {
+    subMode: 'conduction',
+    conductionMaterial: 'copper',
+    conductionTHot: 100,
+    convectionFluid: 'water',
+    convectionPower: 5,
+    radiationSurface: 'matt',
+    radiationT: 200,
+    radiationArea: 1,
+    testedModes: {}
+  },
+
+  thermos: {
+    temp: 80, ambient: 25, time: 0, running: false,
+    features: { cover:false, vacuum:false, silvered:false, insulatedBase:false, narrowMouth:false },
+    eventFlash: { wind:0, ice:0, sun:0, lidOff:0, hotTopUp:0, draft:0 },
+    eventCounter: 0,
+    hadEvent: false,
+    finalTemp: null
+  },
+
+  snapshots: [],
+  badges: { bronze:false, silver:false, gold:false, event:false, master:false }
+};
+
+/* --- Intro card handling ---------------------------------------------------- */
+function loadIntros() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(INTRO_KEY) || '{}');
+    Object.assign(gameState.introDismissed, stored);
+  } catch(e){}
+  applyIntroVisibility();
+}
+function applyIntroVisibility() {
+  for (const key of ['equilibrium','modes','thermos']) {
+    const el = document.getElementById('intro-'+key);
+    if (el) el.style.display = gameState.introDismissed[key] ? 'none' : '';
+  }
+}
+function dismissIntro(key) {
+  gameState.introDismissed[key] = true;
+  localStorage.setItem(INTRO_KEY, JSON.stringify(gameState.introDismissed));
+  applyIntroVisibility();
+}
+
+/* --- Tabs ------------------------------------------------------------------- */
+function switchTab(name) {
+  gameState.currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
+  sizeAll();
+  drawAll();
+}
+
+/* --- Canvas sizing helpers -------------------------------------------------- */
+function fitCanvas(canvas) {
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function sizeAll() {
+  ['eqCanvas','eqGraph','modeCanvas','thCanvas'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) fitCanvas(c);
+  });
+}
+
+/* --- Shared drawing helpers ------------------------------------------------- */
+function drawBoxedLabel(ctx, x, y, text, color = '#f97316', align = 'left') {
+  ctx.font = 'bold 11px JetBrains Mono';
+  const metrics = ctx.measureText(text);
+  const padH = 8;
+  const boxW = metrics.width + padH * 2;
+  const boxH = 20;
+  let bx = x;
+  if (align === 'center') bx = x - boxW / 2;
+  else if (align === 'right') bx = x - boxW;
+  ctx.fillStyle = 'rgba(10,10,10,0.9)';
+  ctx.fillRect(bx, y - boxH / 2, boxW, boxH);
+  ctx.strokeStyle = color; ctx.lineWidth = 1.2;
+  ctx.strokeRect(bx, y - boxH / 2, boxW, boxH);
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx + padH, y);
+}
+
+function drawLegendBox(ctx, x, y, items, align = 'right') {
+  ctx.font = 'bold 10px JetBrains Mono';
+  const rowH = 16, pad = 8, swatch = 10;
+  const widths = items.map(it => ctx.measureText(it.text).width);
+  const boxW = Math.max(...widths) + swatch + pad * 3;
+  const boxH = items.length * rowH + pad * 2;
+  let bx = x;
+  if (align === 'right') bx = x - boxW;
+  else if (align === 'center') bx = x - boxW / 2;
+  ctx.fillStyle = 'rgba(10,10,10,0.92)';
+  ctx.fillRect(bx, y, boxW, boxH);
+  ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.2;
+  ctx.strokeRect(bx, y, boxW, boxH);
+  items.forEach((it, i) => {
+    const rowY = y + pad + i * rowH + rowH / 2;
+    ctx.fillStyle = it.color;
+    ctx.fillRect(bx + pad, rowY - swatch / 2, swatch, swatch);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(it.text, bx + pad + swatch + pad, rowY);
+  });
+}
+
+/* Temperature → colour interpolation (blue → orange → red) */
+function tempColor(T) {
+  const t = Math.max(0, Math.min(1, T / 100));
+  // blue (0) → orange (0.6) → red (1)
+  const r = Math.round(60 + (255 - 60) * Math.min(1, t*1.3));
+  const g = Math.round(130 + (100 - 130) * Math.min(1, t*1.5) + (0-100)*Math.max(0,t-0.6));
+  const b = Math.round(255 - 245 * Math.min(1, t*1.3));
+  return `rgb(${Math.max(0,Math.min(255,r))},${Math.max(0,Math.min(255,g))},${Math.max(0,Math.min(255,b))})`;
+}
+
+/* ============================================================================
+   TAB 1: EQUILIBRIUM LAB
+   ============================================================================ */
+
+const EQ_CONN_K = { copper: 0.10, wood: 0.02, vacuum: 0.0 };
+
+function eqSetConnector(name) {
+  gameState.eq.connector = name;
+  document.querySelectorAll('[data-eq-conn]').forEach(b => b.classList.toggle('active', b.dataset.eqConn === name));
+  drawAll();
+  updateStoryCard();
+}
+
+function eqUpdateSliders() {
+  const TA = +document.getElementById('eqSliderTA').value;
+  const TB = +document.getElementById('eqSliderTB').value;
+  const CA = +document.getElementById('eqSliderCA').value;
+  const CB = +document.getElementById('eqSliderCB').value;
+  gameState.eq.TA_start = TA;
+  gameState.eq.TB_start = TB;
+  gameState.eq.CA = CA;
+  gameState.eq.CB = CB;
+  document.getElementById('eqValTA').textContent = TA + ' °C';
+  document.getElementById('eqValTB').textContent = TB + ' °C';
+  document.getElementById('eqValCA').textContent = CA + '×';
+  document.getElementById('eqValCB').textContent = CB + '×';
+  if (!gameState.eq.running) {
+    gameState.eq.TA = TA;
+    gameState.eq.TB = TB;
+    gameState.eq.time = 0;
+    gameState.eq.history = [{t:0, TA, TB}];
+  }
+  drawAll();
+  updateStoryCard();
+}
+
+let eqInterval = null;
+function eqToggleRun() {
+  const btn = document.getElementById('eqPlayBtn');
+  if (gameState.eq.running) {
+    gameState.eq.running = false;
+    clearInterval(eqInterval); eqInterval = null;
+    btn.innerHTML = '▶️ Run';
+  } else {
+    gameState.eq.running = true;
+    btn.innerHTML = '⏸ Pause';
+    if (gameState.eq.time === 0) {
+      gameState.eq.TA = gameState.eq.TA_start;
+      gameState.eq.TB = gameState.eq.TB_start;
+      gameState.eq.history = [{t:0, TA: gameState.eq.TA, TB: gameState.eq.TB}];
+    }
+    eqInterval = setInterval(eqTick, 50);
+  }
+}
+
+function eqReset() {
+  if (eqInterval) { clearInterval(eqInterval); eqInterval = null; }
+  gameState.eq.running = false;
+  gameState.eq.time = 0;
+  gameState.eq.TA = gameState.eq.TA_start;
+  gameState.eq.TB = gameState.eq.TB_start;
+  gameState.eq.history = [{t:0, TA: gameState.eq.TA, TB: gameState.eq.TB}];
+  document.getElementById('eqPlayBtn').innerHTML = '▶️ Run';
+  drawAll();
+  updateStoryCard();
+}
+
+function eqTick() {
+  const dt = 0.1; // 50ms real → 0.1 s sim
+  const k = EQ_CONN_K[gameState.eq.connector];
+  const CA = gameState.eq.CA, CB = gameState.eq.CB;
+  const dT = gameState.eq.TA - gameState.eq.TB;
+  const rate = k * dT;
+  gameState.eq.TA -= (rate / CA) * dt;
+  gameState.eq.TB += (rate / CB) * dt;
+  gameState.eq.time += dt;
+  gameState.eq.history.push({ t: gameState.eq.time, TA: gameState.eq.TA, TB: gameState.eq.TB });
+  if (gameState.eq.history.length > 400) gameState.eq.history.shift();
+
+  // Award bronze on reaching equilibrium
+  if (Math.abs(gameState.eq.TA - gameState.eq.TB) < 0.5 && !gameState.badges.bronze) {
+    unlockBadge('bronze', 'Reached thermal equilibrium — both objects at the same temperature!');
+  }
+  if (gameState.eq.time > 60) {
+    gameState.eq.running = false;
+    clearInterval(eqInterval); eqInterval = null;
+    document.getElementById('eqPlayBtn').innerHTML = '▶️ Run';
+  }
+  drawEq();
+  drawEqGraph();
+  updateStoryCard();
+}
+
+function drawEq() {
+  const c = document.getElementById('eqCanvas'); if (!c) return;
+  const fit = fitCanvas(c); if (!fit) return;
+  const { ctx, w, h } = fit;
+  // Background clear (canvas already has CSS gradient)
+  ctx.clearRect(0, 0, w, h);
+
+  // Draw two blocks
+  const CA = gameState.eq.CA, CB = gameState.eq.CB;
+  const maxC = 4;
+  const baseW = 100;
+  const blockH_A = 80 + 30 * (CA - 1);
+  const blockH_B = 80 + 30 * (CB - 1);
+  const blockW_A = baseW + 30 * (CA - 1);
+  const blockW_B = baseW + 30 * (CB - 1);
+
+  const cy = h / 2;
+  const gap = 100;
+  const totalWidth = blockW_A + gap + blockW_B;
+  const startX = (w - totalWidth) / 2;
+
+  // Object A
+  const axA = startX;
+  const ayA = cy - blockH_A/2;
+  const colA = tempColor(gameState.eq.TA);
+  ctx.fillStyle = colA;
+  ctx.fillRect(axA, ayA, blockW_A, blockH_A);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(axA, ayA, blockW_A, blockH_A);
+
+  // Label A
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px Outfit';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('A', axA + blockW_A/2, ayA + blockH_A/2 + 5);
+
+  // Object B
+  const axB = startX + blockW_A + gap;
+  const ayB = cy - blockH_B/2;
+  const colB = tempColor(gameState.eq.TB);
+  ctx.fillStyle = colB;
+  ctx.fillRect(axB, ayB, blockW_B, blockH_B);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.strokeRect(axB, ayB, blockW_B, blockH_B);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('B', axB + blockW_B/2, ayB + blockH_B/2 + 5);
+
+  // Connector between them
+  const connY = cy;
+  const connX1 = axA + blockW_A;
+  const connX2 = axB;
+  const connW = connX2 - connX1;
+  const connH = 20;
+
+  let connColor = '#a3a3a3', connLabel = 'copper';
+  if (gameState.eq.connector === 'wood') { connColor = '#8b5a2b'; connLabel = 'wood'; }
+  else if (gameState.eq.connector === 'vacuum') { connColor = '#404040'; connLabel = 'vacuum'; }
+  if (gameState.eq.connector === 'vacuum') {
+    // Dashed outline
+    ctx.strokeStyle = connColor;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(connX1, connY - connH/2, connW, connH);
+    ctx.setLineDash([]);
+  } else {
+    ctx.fillStyle = connColor;
+    ctx.fillRect(connX1, connY - connH/2, connW, connH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeRect(connX1, connY - connH/2, connW, connH);
+  }
+
+  // Energy flow arrows
+  const dT = gameState.eq.TA - gameState.eq.TB;
+  if (Math.abs(dT) > 0.5 && EQ_CONN_K[gameState.eq.connector] > 0) {
+    const dir = dT > 0 ? 1 : -1;
+    const nArrows = 3;
+    const phase = (Date.now() / 400) % 1;
+    for (let i = 0; i < nArrows; i++) {
+      const p = ((i / nArrows) + phase) % 1;
+      const ax = connX1 + 10 + p * (connW - 20);
+      const arrY = connY - 26;
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      if (dir > 0) {
+        ctx.moveTo(ax, arrY);
+        ctx.lineTo(ax + 12, arrY + 6);
+        ctx.lineTo(ax, arrY + 12);
+      } else {
+        ctx.moveTo(ax + 12, arrY);
+        ctx.lineTo(ax, arrY + 6);
+        ctx.lineTo(ax + 12, arrY + 12);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    drawBoxedLabel(ctx, (connX1+connX2)/2, connY - 40, 'energy flow →', '#f97316', 'center');
+  } else if (EQ_CONN_K[gameState.eq.connector] === 0) {
+    drawBoxedLabel(ctx, (connX1+connX2)/2, connY - 40, 'no medium — no transfer', '#a3a3a3', 'center');
+  } else {
+    drawBoxedLabel(ctx, (connX1+connX2)/2, connY - 40, 'equilibrium reached', '#fff', 'center');
+  }
+
+  // Temperature labels above each block
+  drawBoxedLabel(ctx, axA + blockW_A/2, ayA - 20, `A: ${gameState.eq.TA.toFixed(1)} °C`, '#fb923c', 'center');
+  drawBoxedLabel(ctx, axB + blockW_B/2, ayB - 20, `B: ${gameState.eq.TB.toFixed(1)} °C`, '#fb923c', 'center');
+
+  // Connector label
+  ctx.fillStyle = '#a3a3a3';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(connLabel, (connX1+connX2)/2, connY + 20);
+
+  // Time
+  drawBoxedLabel(ctx, w - 12, 20, `t = ${gameState.eq.time.toFixed(1)} s`, '#fff', 'right');
+}
+
+const EQ_MAX_T = 60;   // locked x-axis
+const EQ_MIN_TEMP = 0, EQ_MAX_TEMP = 100;
+
+function drawEqGraph() {
+  const c = document.getElementById('eqGraph'); if (!c) return;
+  const fit = fitCanvas(c); if (!fit) return;
+  const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 46, padB = 30, padT = 24, padR = 16;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const tx = t => padL + Math.min(EQ_MAX_T, Math.max(0, t)) / EQ_MAX_T * plotW;
+  const ty = T => padT + plotH - (Math.min(EQ_MAX_TEMP, Math.max(EQ_MIN_TEMP, T)) - EQ_MIN_TEMP) / (EQ_MAX_TEMP - EQ_MIN_TEMP) * plotH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let g = 1; g <= 4; g++) {
+    const gy = padT + (plotH * g / 5);
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+  }
+  for (let g = 1; g <= 5; g++) {
+    const gx = padL + (plotW * g / 6);
+    ctx.beginPath(); ctx.moveTo(gx, padT); ctx.lineTo(gx, padT + plotH); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL, padT + plotH);
+  ctx.lineTo(padL + plotW, padT + plotH);
+  ctx.stroke();
+
+  // Axis labels in padding
+  ctx.fillStyle = '#a3a3a3';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let T = 0; T <= 100; T += 20) {
+    const yy = ty(T);
+    ctx.fillText(T + '°', padL - 6, yy);
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let tt = 0; tt <= 60; tt += 10) {
+    const xx = tx(tt);
+    ctx.fillText(tt + 's', xx, padT + plotH + 6);
+  }
+
+  // Axis titles
+  ctx.save();
+  ctx.translate(14, padT + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 11px Outfit';
+  ctx.fillStyle = '#fb923c';
+  ctx.fillText('Temperature (°C)', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = '#fb923c';
+  ctx.fillText('time (s)', padL + plotW/2, h - 4);
+
+  // Equilibrium line (dashed)
+  const CA = gameState.eq.CA, CB = gameState.eq.CB;
+  const Teq = (CA * gameState.eq.TA_start + CB * gameState.eq.TB_start) / (CA + CB);
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, ty(Teq));
+  ctx.lineTo(padL + plotW, ty(Teq));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Plot T_A
+  const hist = gameState.eq.history;
+  if (hist.length > 1) {
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    hist.forEach((p, i) => {
+      const x = tx(p.t), y = ty(p.TA);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    hist.forEach((p, i) => {
+      const x = tx(p.t), y = ty(p.TB);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // Legend
+  drawLegendBox(ctx, w - 8, padT + 4, [
+    { color: '#f97316', text: 'Object A' },
+    { color: '#fb923c', text: 'Object B' },
+    { color: '#ffffff', text: `T_eq ≈ ${Teq.toFixed(1)}°C` }
+  ], 'right');
+}
+
+/* ============================================================================
+   TAB 2: THREE MODES
+   ============================================================================ */
+
+const COND_K = { copper: 4.0, iron: 2.0, glass: 0.5, wood: 0.15 };
+
+function modeSetSub(sub) {
+  gameState.modes.subMode = sub;
+  gameState.modes.testedModes[sub] = true;
+  document.querySelectorAll('[data-mode-sub]').forEach(b => b.classList.toggle('active', b.dataset.modeSub === sub));
+  ['conduction','convection','radiation'].forEach(m => {
+    const el = document.getElementById('modeCtrl-'+m);
+    if (el) el.style.display = (m === sub) ? '' : 'none';
+  });
+  // Silver badge — all three tested
+  if (gameState.modes.testedModes.conduction && gameState.modes.testedModes.convection && gameState.modes.testedModes.radiation) {
+    if (!gameState.badges.silver) unlockBadge('silver', 'Tested all three modes of heat transfer.');
+  }
+  drawAll();
+  updateStoryCard();
+}
+
+function modeSetCondMat(m) {
+  gameState.modes.conductionMaterial = m;
+  document.querySelectorAll('[data-cond-mat]').forEach(b => b.classList.toggle('active', b.dataset.condMat === m));
+  drawAll(); updateStoryCard();
+}
+function modeSetConvFluid(f) {
+  gameState.modes.convectionFluid = f;
+  document.querySelectorAll('[data-conv-fluid]').forEach(b => b.classList.toggle('active', b.dataset.convFluid === f));
+  drawAll(); updateStoryCard();
+}
+function modeSetRadSurf(s) {
+  gameState.modes.radiationSurface = s;
+  document.querySelectorAll('[data-rad-surf]').forEach(b => b.classList.toggle('active', b.dataset.radSurf === s));
+  drawAll(); updateStoryCard();
+}
+
+function modeUpdate() {
+  const t = +document.getElementById('condSliderT').value;
+  gameState.modes.conductionTHot = t;
+  document.getElementById('condValT').textContent = t + ' °C';
+
+  const pow = +document.getElementById('convSliderPow').value;
+  gameState.modes.convectionPower = pow;
+  const powLabel = pow === 0 ? 'Off' : pow < 4 ? 'Low' : pow < 8 ? 'Medium' : 'High';
+  document.getElementById('convValPow').textContent = powLabel;
+
+  const rt = +document.getElementById('radSliderT').value;
+  gameState.modes.radiationT = rt;
+  document.getElementById('radValT').textContent = rt + ' °C';
+
+  const ra = +document.getElementById('radSliderA').value;
+  gameState.modes.radiationArea = ra;
+  document.getElementById('radValA').textContent = ra + '×';
+
+  drawAll();
+  updateStoryCard();
+}
+
+let modeAnimTick = 0;
+let modeAnimInterval = null;
+
+function modeStartAnim() {
+  if (modeAnimInterval) return;
+  modeAnimInterval = setInterval(() => { modeAnimTick++; if (gameState.currentTab === 'modes') drawModeCanvas(); }, 60);
+}
+
+function drawModeCanvas() {
+  const c = document.getElementById('modeCanvas'); if (!c) return;
+  const fit = fitCanvas(c); if (!fit) return;
+  const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const sub = gameState.modes.subMode;
+  if (sub === 'conduction') drawConduction(ctx, w, h);
+  else if (sub === 'convection') drawConvection(ctx, w, h);
+  else drawRadiation(ctx, w, h);
+}
+
+function drawConduction(ctx, w, h) {
+  const mat = gameState.modes.conductionMaterial;
+  const tHot = gameState.modes.conductionTHot;
+  const k = COND_K[mat];
+  const isMetal = (mat === 'copper' || mat === 'iron');
+
+  const rodX = 60, rodY = h/2 - 40, rodW = w - 120, rodH = 80;
+
+  // Draw rod with gradient (hot to cold along its length)
+  const grad = ctx.createLinearGradient(rodX, 0, rodX + rodW, 0);
+  const colHot = tempColor(tHot);
+  const colCold = tempColor(20);
+  grad.addColorStop(0, colHot);
+  grad.addColorStop(1, colCold);
+  ctx.fillStyle = grad;
+  ctx.fillRect(rodX, rodY, rodW, rodH);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rodX, rodY, rodW, rodH);
+
+  // Flame at left
+  const flameX = rodX - 30;
+  ctx.font = '32px Outfit';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🔥', flameX, h/2);
+
+  // Ice at right
+  ctx.fillText('🧊', rodX + rodW + 30, h/2);
+
+  // Draw atoms as circles with vibration
+  const nAtoms = 12;
+  for (let i = 0; i < nAtoms; i++) {
+    const px = rodX + 20 + (rodW - 40) * (i / (nAtoms - 1));
+    const vibAmp = Math.max(1, 8 * (1 - i / (nAtoms - 1)) * (k / 4));  // hot end vibrates more
+    const phase = (Date.now() / 80 + i * 30) / 30;
+    const dx = Math.sin(phase) * vibAmp;
+    const dy = Math.cos(phase * 1.3) * vibAmp * 0.6;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(px + dx, rodY + rodH/2 + dy, 6, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Free electrons (small dots streaming) — only if metal
+  if (isMetal) {
+    const nEl = Math.floor(6 + 10 * (k/4));
+    for (let i = 0; i < nEl; i++) {
+      const t = ((Date.now() / (300 - k*30) + i / nEl) % 1);
+      const px = rodX + 10 + (rodW - 20) * t;
+      const py = rodY + 15 + (rodH - 30) * ((i * 0.37) % 1);
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+    drawBoxedLabel(ctx, w - 12, h - 30, 'free electrons →', '#f97316', 'right');
+  }
+
+  // Labels
+  drawBoxedLabel(ctx, rodX + rodW/2, rodY - 20, `${mat} · k = ${k.toFixed(2)}`, '#fb923c', 'center');
+  drawBoxedLabel(ctx, rodX + 20, rodY + rodH + 22, `${tHot} °C`, '#f97316', 'left');
+  drawBoxedLabel(ctx, rodX + rodW - 20, rodY + rodH + 22, `20 °C`, '#fb923c', 'right');
+
+  // Rate box
+  const rate = k * (tHot - 20);
+  drawBoxedLabel(ctx, w/2, 26, `Rate of energy transfer ∝ ${rate.toFixed(0)}`, '#f97316', 'center');
+}
+
+function drawConvection(ctx, w, h) {
+  const pow = gameState.modes.convectionPower;
+  const fluid = gameState.modes.convectionFluid;
+
+  // Beaker walls
+  const bx = w/2 - 130, by = 50, bw = 260, bh = h - 140;
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx, by + bh);
+  ctx.lineTo(bx + bw, by + bh);
+  ctx.lineTo(bx + bw, by);
+  ctx.stroke();
+
+  // Fluid fill (light overlay)
+  ctx.fillStyle = fluid === 'water' ? 'rgba(59,130,246,0.15)' : 'rgba(212,212,212,0.08)';
+  ctx.fillRect(bx + 2, by + 10, bw - 4, bh - 12);
+
+  // Draw particles
+  const nParticles = fluid === 'water' ? 30 : 22;
+  const speed = pow / 10; // 0..1
+  const time = Date.now() / 1000;
+
+  for (let i = 0; i < nParticles; i++) {
+    // Each particle has a 'phase' around a convection loop
+    const phase = (i / nParticles + time * (0.1 + speed * 0.4)) % 1;
+    // Loop: rise on left, cross at top, sink on right, cross at bottom
+    let px, py, temp;
+    if (phase < 0.25) { // rising left
+      const t = phase / 0.25;
+      px = bx + 30 + Math.sin(t * Math.PI) * 5;
+      py = by + bh - 20 - t * (bh - 40);
+      temp = 90 - t * 40;
+    } else if (phase < 0.5) { // crossing top
+      const t = (phase - 0.25) / 0.25;
+      px = bx + 30 + t * (bw - 60);
+      py = by + 20 - Math.sin(t * Math.PI) * 5;
+      temp = 50 - t * 20;
+    } else if (phase < 0.75) { // sinking right
+      const t = (phase - 0.5) / 0.25;
+      px = bx + bw - 30 + Math.sin(t * Math.PI) * -5;
+      py = by + 20 + t * (bh - 40);
+      temp = 30 + t * 10;
+    } else { // crossing bottom
+      const t = (phase - 0.75) / 0.25;
+      px = bx + bw - 30 - t * (bw - 60);
+      py = by + bh - 20 + Math.sin(t * Math.PI) * 5;
+      temp = 40 + t * 50;
+    }
+    // If power = 0, freeze at random spread positions
+    if (pow === 0) {
+      const gx = bx + 30 + ((i * 41) % (bw - 60));
+      const gy = by + 30 + ((i * 67) % (bh - 60));
+      px = gx; py = gy; temp = 25;
+    }
+    ctx.fillStyle = tempColor(temp);
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Heat source at bottom
+  const heaterY = by + bh + 4;
+  if (pow > 0) {
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(bx + 40, heaterY, bw - 80, 8);
+    // Draw flames
+    ctx.font = '20px Outfit';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const nFlames = Math.min(6, Math.max(1, Math.floor(pow / 2)));
+    for (let i = 0; i < nFlames; i++) {
+      const fx = bx + bw * (i + 1) / (nFlames + 1);
+      ctx.fillText('🔥', fx, heaterY + 12);
+    }
+  } else {
+    ctx.fillStyle = 'rgba(115,115,115,0.7)';
+    ctx.fillRect(bx + 40, heaterY, bw - 80, 8);
+    ctx.font = '16px Outfit';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#737373';
+    ctx.fillText('heater off', bx + bw/2, heaterY + 14);
+  }
+
+  // Arrows showing convection direction
+  if (pow > 0) {
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    // Left up arrow
+    drawArrow(ctx, bx + 25, by + bh - 40, bx + 25, by + 60);
+    // Right down arrow
+    ctx.strokeStyle = '#3b82f6';
+    drawArrow(ctx, bx + bw - 25, by + 60, bx + bw - 25, by + bh - 40);
+  }
+
+  // Labels
+  drawBoxedLabel(ctx, bx + 30, by + 20, 'less dense ↑', '#f97316', 'left');
+  drawBoxedLabel(ctx, bx + bw - 30, by + bh - 24, 'more dense ↓', '#3b82f6', 'right');
+  drawBoxedLabel(ctx, w/2, 24, `Convection in ${fluid}`, '#fb923c', 'center');
+}
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const headLen = 10;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI/6), y2 - headLen * Math.sin(angle - Math.PI/6));
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI/6), y2 - headLen * Math.sin(angle + Math.PI/6));
+  ctx.stroke();
+}
+
+function drawRadiation(ctx, w, h) {
+  const surf = gameState.modes.radiationSurface;
+  const T = gameState.modes.radiationT;
+  const area = gameState.modes.radiationArea;
+  const emissivity = { matt: 0.95, grey: 0.5, shiny: 0.10 }[surf];
+
+  // Draw object at center
+  const cx = w/2, cy = h/2;
+  const sz = 40 + 20 * area;
+
+  // Object colour
+  let objColor;
+  if (surf === 'matt') objColor = '#171717';
+  else if (surf === 'grey') objColor = '#737373';
+  else objColor = '#e5e5e5';
+
+  ctx.fillStyle = objColor;
+  ctx.fillRect(cx - sz/2, cy - sz/2, sz, sz);
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx - sz/2, cy - sz/2, sz, sz);
+
+  // Emission wavy lines
+  const rate = emissivity * (T + 273) / 100 * area; // pseudo-quantity
+  const nRays = Math.max(4, Math.min(24, Math.round(rate * 0.8)));
+  const t = Date.now() / 600;
+
+  for (let i = 0; i < nRays; i++) {
+    const angle = (i / nRays) * Math.PI * 2;
+    const phase = (t + i * 0.13) % 1;
+    const maxDist = Math.min(w, h) / 2 - 20;
+    const dist = phase * maxDist;
+    const startR = sz/2 + 4;
+    if (dist < startR) continue;
+    // Wavy line from object edge outward
+    const nSegs = 8;
+    ctx.strokeStyle = `rgba(249,115,22,${(1-phase) * 0.9})`;
+    ctx.lineWidth = 1.5 + emissivity * 1.5;
+    ctx.beginPath();
+    for (let s = 0; s <= nSegs; s++) {
+      const r = startR + (dist - startR) * s / nSegs;
+      const wave = Math.sin(s * 0.9 + phase * 6) * 3;
+      const px = cx + Math.cos(angle) * r + Math.cos(angle + Math.PI/2) * wave;
+      const py = cy + Math.sin(angle) * r + Math.sin(angle + Math.PI/2) * wave;
+      if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  // Reflected rays inward for shiny (indicating reflection)
+  if (surf === 'shiny') {
+    // Draw a few incoming reflected rays
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI/8;
+      const rIn = sz/2 + 30 + (Math.sin(t * 2 + i) * 5);
+      const rOut = sz/2 + 60;
+      const p1 = { x: cx + Math.cos(angle) * rIn, y: cy + Math.sin(angle) * rIn };
+      const p2 = { x: cx + Math.cos(angle) * rOut, y: cy + Math.sin(angle) * rOut };
+      ctx.strokeStyle = 'rgba(212,212,212,0.5)';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Vacuum indicator (this can happen in vacuum!)
+  drawBoxedLabel(ctx, w/2, 24, `no medium needed — emits through vacuum`, '#fb923c', 'center');
+  drawBoxedLabel(ctx, cx, cy + sz/2 + 26, `T = ${T} °C · ε ≈ ${emissivity.toFixed(2)}`, '#f97316', 'center');
+
+  // Rate at bottom
+  drawBoxedLabel(ctx, w/2, h - 24, `Rate ∝ colour × T × area  →  ${(rate).toFixed(1)}`, '#f97316', 'center');
+
+  // Legend
+  drawLegendBox(ctx, w - 8, 50, [
+    { color: '#f97316', text: 'emission' },
+    { color: '#a3a3a3', text: 'reflection (shiny)' }
+  ], 'right');
+}
+
+/* ============================================================================
+   TAB 3: THERMOS CHALLENGE
+   ============================================================================ */
+
+function thToggleFeature(name) {
+  gameState.thermos.features[name] = !gameState.thermos.features[name];
+  document.getElementById('thFeat-'+name).classList.toggle('on', gameState.thermos.features[name]);
+  drawAll(); updateStoryCard();
+}
+
+let thInterval = null;
+
+function thToggleRun() {
+  const btn = document.getElementById('thPlayBtn');
+  if (gameState.thermos.running) {
+    gameState.thermos.running = false;
+    clearInterval(thInterval); thInterval = null;
+    btn.innerHTML = '▶️ Start';
+  } else {
+    if (gameState.thermos.time >= 60 || gameState.thermos.time === 0) {
+      gameState.thermos.time = 0;
+      gameState.thermos.temp = 80;
+      gameState.thermos.hadEvent = false;
+    }
+    gameState.thermos.running = true;
+    btn.innerHTML = '⏸ Pause';
+    thInterval = setInterval(thTick, 50);
+  }
+}
+
+function thReset() {
+  if (thInterval) { clearInterval(thInterval); thInterval = null; }
+  gameState.thermos.running = false;
+  gameState.thermos.time = 0;
+  gameState.thermos.temp = 80;
+  gameState.thermos.hadEvent = false;
+  gameState.thermos.finalTemp = null;
+  document.getElementById('thPlayBtn').innerHTML = '▶️ Start';
+  drawAll(); updateStoryCard();
+}
+
+/* Compute heat-loss rate coefficient given active features */
+function thComputeK() {
+  // Base rate coefficient — big losses if no features
+  // Losses per mode:
+  //   conductionBase   -- through walls and base
+  //   convectionBase   -- through top
+  //   radiationBase    -- through all surfaces
+  const f = gameState.thermos.features;
+  let kCond = 0.014;
+  let kConv = 0.018;
+  let kRad  = 0.010;
+  if (f.vacuum) { kCond *= 0.15; kConv *= 0.15; }         // vacuum kills conduction & convection through walls
+  if (f.insulatedBase) kCond *= 0.55;                      // base contributes to conduction
+  if (f.cover) kConv *= 0.30;                              // cover blocks top convection
+  if (f.narrowMouth) { kConv *= 0.55; kRad *= 0.85; }
+  if (f.silvered) kRad *= 0.15;                            // silvered kills radiation
+  return kCond + kConv + kRad;
+}
+
+function thTick() {
+  const dt = 0.1;
+  const k = thComputeK();
+  const dT = gameState.thermos.temp - gameState.thermos.ambient;
+  gameState.thermos.temp -= k * dT * dt;
+  // Fade event effects
+  for (const key of Object.keys(gameState.thermos.eventFlash)) {
+    if (gameState.thermos.eventFlash[key] > 0) gameState.thermos.eventFlash[key] = Math.max(0, gameState.thermos.eventFlash[key] - dt);
+  }
+  gameState.thermos.time += dt;
+  if (gameState.thermos.time >= 60) {
+    gameState.thermos.running = false;
+    clearInterval(thInterval); thInterval = null;
+    gameState.thermos.finalTemp = gameState.thermos.temp;
+    document.getElementById('thPlayBtn').innerHTML = '▶️ Start';
+    // Gold badge if kept above 70°C
+    if (gameState.thermos.temp >= 70 && !gameState.badges.gold) {
+      unlockBadge('gold', `Coffee finished at ${gameState.thermos.temp.toFixed(1)}°C — you beat the target!`);
+    }
+    // Master badge check
+    if (gameState.badges.bronze && gameState.badges.silver && gameState.badges.gold && gameState.badges.event && !gameState.badges.master) {
+      unlockBadge('master', 'Thermos Master — every badge unlocked!');
+      celebrate();
+    }
+  }
+  drawThermos();
+  drawThermosMission();
+  updateStoryCard();
+}
+
+function thEvent(type) {
+  const th = gameState.thermos;
+  th.hadEvent = true;
+  th.eventCounter++;
+  th.eventFlash[type] = 1.6;
+  switch(type) {
+    case 'wind': th.temp -= 3; break;
+    case 'ice': th.temp -= 6; break;
+    case 'sun': th.temp += 2; break;
+    case 'lid-off':
+      // Temporarily disable cover for a moment — big loss
+      th.temp -= 2;
+      break;
+    case 'hot-top-up':
+      th.temp = Math.min(90, th.temp + 8); break;
+    case 'draft': th.temp -= 4; break;
+  }
+  th.temp = Math.max(gameState.thermos.ambient, Math.min(100, th.temp));
+  // Award event badge if user still finishes above target after an event
+  if (!gameState.badges.event && th.time > 5) {
+    unlockBadge('event', 'Survived a disruption event mid-run!');
+  }
+  drawThermos();
+  drawThermosMission();
+  updateStoryCard();
+}
+
+function drawThermosMission() {
+  document.getElementById('thTime').textContent = gameState.thermos.time.toFixed(1) + 's';
+  document.getElementById('thTempLabel').textContent = gameState.thermos.temp.toFixed(1) + ' °C';
+  const fill = document.getElementById('thTempFill');
+  const pct = Math.max(0, Math.min(100, ((gameState.thermos.temp - 25) / 55) * 100));
+  fill.style.width = pct + '%';
+  fill.textContent = gameState.thermos.temp.toFixed(1) + ' °C';
+  fill.style.background = gameState.thermos.temp >= 70 ? '#f97316' : gameState.thermos.temp >= 50 ? '#fb923c' : '#ea580c';
+}
+
+function drawThermos() {
+  const c = document.getElementById('thCanvas'); if (!c) return;
+  const fit = fitCanvas(c); if (!fit) return;
+  const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+
+  const th = gameState.thermos;
+  // Draw ambient background wash based on any active event
+  if (th.eventFlash.sun > 0) {
+    ctx.fillStyle = `rgba(251,191,36,${th.eventFlash.sun * 0.15})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+  if (th.eventFlash.wind > 0 || th.eventFlash.draft > 0) {
+    ctx.fillStyle = `rgba(96,165,250,${(th.eventFlash.wind + th.eventFlash.draft) * 0.10})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Flask cross section
+  const cx = w/2;
+  const flaskW = 200;
+  const flaskH = 320;
+  const flaskX = cx - flaskW/2;
+  const flaskY = 40;
+
+  // Outer wall
+  ctx.strokeStyle = '#a3a3a3';
+  ctx.lineWidth = 4;
+  const mouthWidth = th.features.narrowMouth ? 80 : 140;
+  const mouthOffset = (flaskW - mouthWidth) / 2;
+
+  // Draw outer flask outline
+  ctx.beginPath();
+  ctx.moveTo(flaskX + mouthOffset, flaskY);
+  ctx.lineTo(flaskX + mouthOffset, flaskY + 30);
+  ctx.lineTo(flaskX, flaskY + 60);
+  ctx.lineTo(flaskX, flaskY + flaskH);
+  ctx.lineTo(flaskX + flaskW, flaskY + flaskH);
+  ctx.lineTo(flaskX + flaskW, flaskY + 60);
+  ctx.lineTo(flaskX + flaskW - mouthOffset, flaskY + 30);
+  ctx.lineTo(flaskX + flaskW - mouthOffset, flaskY);
+  ctx.stroke();
+
+  // Vacuum gap indicator
+  const wallThick = th.features.vacuum ? 18 : 8;
+  const innerX = flaskX + wallThick;
+  const innerY = flaskY + 60 + (wallThick - 8);
+  const innerW = flaskW - 2 * wallThick;
+  const innerH = flaskH - 60 - wallThick - 8;
+
+  if (th.features.vacuum) {
+    // Dashed vacuum region
+    ctx.strokeStyle = 'rgba(115,115,115,0.6)';
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(flaskX + 4, flaskY + 62, flaskW - 8, flaskH - 66);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a3a3a3';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('vacuum', flaskX + 6, flaskY + 66);
+  }
+
+  // Inner wall (silvered maybe)
+  const silvered = th.features.silvered;
+  ctx.strokeStyle = silvered ? '#e5e5e5' : '#737373';
+  ctx.lineWidth = silvered ? 3 : 2;
+  ctx.strokeRect(innerX, innerY, innerW, innerH);
+  if (silvered) {
+    // shine dashes along inner wall
+    ctx.fillStyle = 'rgba(229,229,229,0.15)';
+    ctx.fillRect(innerX + 1, innerY + 1, innerW - 2, innerH - 2);
+  }
+
+  // Liquid inside
+  const liquidTop = innerY + 20;
+  const liquidBottom = innerY + innerH - 8;
+  const liquidLeft = innerX + 4;
+  const liquidRight = innerX + innerW - 4;
+  ctx.fillStyle = tempColor(th.temp);
+  ctx.fillRect(liquidLeft, liquidTop, liquidRight - liquidLeft, liquidBottom - liquidTop);
+
+  // Steam wisps if temperature high and cover off
+  if (!th.features.cover && th.temp > 40) {
+    const wisps = Math.min(4, Math.floor((th.temp - 40) / 10) + 1);
+    for (let i = 0; i < wisps; i++) {
+      const phase = (Date.now() / 600 + i * 0.4) % 1;
+      const wx = cx + Math.sin(phase * Math.PI * 2 + i) * 15;
+      const wy = flaskY + 25 - phase * 40;
+      const alpha = (1 - phase) * 0.6;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(wx, wy, 6 + phase * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Insulated base?
+  if (th.features.insulatedBase) {
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(flaskX + 8, flaskY + flaskH - 8, flaskW - 16, 8);
+    ctx.fillStyle = '#737373';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('insulated base', cx, flaskY + flaskH - 4);
+  }
+
+  // Cover on top
+  if (th.features.cover) {
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(flaskX + mouthOffset - 6, flaskY - 12, mouthWidth + 12, 14);
+    ctx.strokeStyle = '#fff';
+    ctx.strokeRect(flaskX + mouthOffset - 6, flaskY - 12, mouthWidth + 12, 14);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 10px Outfit';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('COVER', cx, flaskY - 5);
+  }
+
+  // Ambient thermometer / label
+  drawBoxedLabel(ctx, 10, 20, `☕ inside: ${th.temp.toFixed(1)}°C`, '#f97316', 'left');
+  drawBoxedLabel(ctx, w - 10, 20, `🏠 ambient: ${th.ambient}°C`, '#fb923c', 'right');
+
+  // Event flash overlays
+  if (th.eventFlash.ice > 0) drawBoxedLabel(ctx, cx, h - 40, `🧊 ice event`, '#3b82f6', 'center');
+  if (th.eventFlash.wind > 0) drawBoxedLabel(ctx, cx, h - 40, `💨 cold wind`, '#60a5fa', 'center');
+  if (th.eventFlash.draft > 0) drawBoxedLabel(ctx, cx, h - 40, `🌬️ draft`, '#60a5fa', 'center');
+  if (th.eventFlash.sun > 0) drawBoxedLabel(ctx, cx, h - 40, `☀️ sunlight — matt case would gain heat`, '#fbbf24', 'center');
+  if (th.eventFlash['lid-off'] > 0) drawBoxedLabel(ctx, cx, h - 40, `🎈 lid pop — cover briefly disabled`, '#ea580c', 'center');
+  if (th.eventFlash['hot-top-up'] > 0) drawBoxedLabel(ctx, cx, h - 40, `🔥 hot top-up`, '#f97316', 'center');
+
+  // Rate readout at bottom right
+  const k = thComputeK();
+  drawBoxedLabel(ctx, w - 10, h - 20, `k ≈ ${k.toFixed(3)} · lower = better`, '#a3a3a3', 'right');
+}
+
+/* ============================================================================
+   PRESETS
+   ============================================================================ */
+const PRESETS = {
+  equilibrium: {
+    hotMetalColdBlock: () => {
+      document.getElementById('eqSliderTA').value = 90;
+      document.getElementById('eqSliderTB').value = 10;
+      document.getElementById('eqSliderCA').value = 1;
+      document.getElementById('eqSliderCB').value = 1;
+      eqSetConnector('copper');
+      eqUpdateSliders(); eqReset();
+    },
+    coffeeInRoom: () => {
+      document.getElementById('eqSliderTA').value = 85;
+      document.getElementById('eqSliderTB').value = 25;
+      document.getElementById('eqSliderCA').value = 1;
+      document.getElementById('eqSliderCB').value = 4;
+      eqSetConnector('wood');
+      eqUpdateSliders(); eqReset();
+    },
+    vacuumFlask: () => {
+      document.getElementById('eqSliderTA').value = 90;
+      document.getElementById('eqSliderTB').value = 20;
+      document.getElementById('eqSliderCA').value = 1;
+      document.getElementById('eqSliderCB').value = 1;
+      eqSetConnector('vacuum');
+      eqUpdateSliders(); eqReset();
+    }
+  },
+  conduction: {
+    metalSpoon: () => { modeSetCondMat('copper'); document.getElementById('condSliderT').value = 90; modeUpdate(); },
+    woodenSpoon: () => { modeSetCondMat('wood'); document.getElementById('condSliderT').value = 90; modeUpdate(); },
+    redHotIron: () => { modeSetCondMat('iron'); document.getElementById('condSliderT').value = 200; modeUpdate(); }
+  },
+  convection: {
+    boilingPot: () => { modeSetConvFluid('water'); document.getElementById('convSliderPow').value = 9; modeUpdate(); },
+    seaBreeze: () => { modeSetConvFluid('air'); document.getElementById('convSliderPow').value = 6; modeUpdate(); },
+    offHeat: () => { document.getElementById('convSliderPow').value = 0; modeUpdate(); }
+  },
+  radiation: {
+    blackKettle: () => { modeSetRadSurf('matt'); document.getElementById('radSliderT').value = 100; document.getElementById('radSliderA').value = 2; modeUpdate(); },
+    silverFlask: () => { modeSetRadSurf('shiny'); document.getElementById('radSliderT').value = 100; document.getElementById('radSliderA').value = 2; modeUpdate(); },
+    sunRadiator: () => { modeSetRadSurf('matt'); document.getElementById('radSliderT').value = 400; document.getElementById('radSliderA').value = 4; modeUpdate(); }
+  }
+};
+
+function applyPreset(mode, key) {
+  const fn = PRESETS[mode] && PRESETS[mode][key];
+  if (fn) { fn(); showNotification('Preset', 'Applied ' + key, 'success'); }
+}
+
+/* ============================================================================
+   STORY CARD + OBS TABLE
+   ============================================================================ */
+function updateStoryCard() {
+  const wrap = document.getElementById('storyCardWrap');
+  const bodyEl = document.getElementById('obsTableBody');
+  if (!wrap || !bodyEl) return;
+
+  const tab = gameState.currentTab;
+  let emoji = '👋', title = '—', text = '—', why = '—';
+  const rows = [];
+
+  if (tab === 'equilibrium') {
+    const eq = gameState.eq;
+    const CA = eq.CA, CB = eq.CB;
+    const Teq = (CA * eq.TA_start + CB * eq.TB_start) / (CA + CB);
+    const k = EQ_CONN_K[eq.connector];
+    const dT = eq.TA - eq.TB;
+    const hotter = dT > 0.5 ? 'A' : dT < -0.5 ? 'B' : 'neither';
+    if (k === 0) {
+      emoji = '🕳️';
+      title = 'A vacuum blocks conduction and convection';
+      text = `No particles between the objects. Their temperatures don't change here — energy can't transfer through a vacuum by conduction or convection.`;
+      why = 'Why this matters: a vacuum flask uses this exact trick between its double walls.';
+    } else if (Math.abs(dT) < 0.5) {
+      emoji = '✅';
+      title = `Thermal equilibrium at T ≈ ${((eq.TA + eq.TB)/2).toFixed(1)} °C`;
+      text = `Both objects have reached the same temperature. Energy is <strong>still</strong> exchanged, but the net transfer is zero.`;
+      why = 'Why this matters: exam distinction — equilibrium = same temperature, NOT same internal energy.';
+    } else {
+      emoji = '➡️';
+      title = `Energy flowing from ${hotter} → ${hotter === 'A' ? 'B' : 'A'}`;
+      text = `Object ${hotter} is <strong>hotter</strong>. Energy transfers through the ${eq.connector} connector until both reach the equilibrium temperature <strong>${Teq.toFixed(1)} °C</strong>.`;
+      why = 'Why this matters: energy flows FROM hot TO cold — never the reverse.';
+    }
+    rows.push(['T_A', eq.TA.toFixed(2) + '°C', 'current temperature of A']);
+    rows.push(['T_B', eq.TB.toFixed(2) + '°C', 'current temperature of B']);
+    rows.push(['T_eq (predicted)', Teq.toFixed(2) + '°C', '= (C_A·T_A + C_B·T_B)/(C_A+C_B)']);
+    rows.push(['Connector', eq.connector, `k = ${k.toFixed(3)}`]);
+    rows.push(['Elapsed time', eq.time.toFixed(1) + ' s', 'simulation time']);
+  } else if (tab === 'modes') {
+    const m = gameState.modes;
+    if (m.subMode === 'conduction') {
+      const mat = m.conductionMaterial;
+      const k = COND_K[mat];
+      const isMetal = (mat === 'copper' || mat === 'iron');
+      emoji = '🔥';
+      title = `Conduction along a ${mat} rod`;
+      text = isMetal
+        ? `Heated atoms at the hot end <strong>vibrate</strong> more and pass energy to neighbours. In this metal, <strong>free electrons</strong> also drift rapidly, transferring energy quickly. Rate ∝ k·ΔT.`
+        : `Heated atoms at the hot end <strong>vibrate</strong> and pass the vibration to neighbouring atoms. No free electrons → conduction is slow.`;
+      why = isMetal
+        ? 'Why this matters: for a metal you must name BOTH mechanisms — vibrating atoms AND free electrons.'
+        : 'Why this matters: non-metals conduct poorly because only vibration transfers energy.';
+      rows.push(['Material', mat, isMetal ? 'metal — both mechanisms' : 'non-metal — vibration only']);
+      rows.push(['Thermal conductivity k', k.toFixed(2), 'higher = better conductor']);
+      rows.push(['Hot end T', m.conductionTHot + '°C', 'set by slider']);
+      rows.push(['Cold end T', '20°C', 'assumed room temperature']);
+      rows.push(['Rate ∝ k·ΔT', (k * (m.conductionTHot - 20)).toFixed(1), 'relative rate of energy transfer']);
+    } else if (m.subMode === 'convection') {
+      emoji = '💧';
+      title = `Convection current in ${m.convectionFluid}`;
+      text = `Fluid near the heater is heated and <strong>expands</strong>. It becomes <strong>less dense</strong> and rises. Cooler, <strong>denser</strong> fluid sinks to replace it. A convection <strong>current</strong> is set up.`;
+      why = 'Why this matters: the word DENSITY must appear in your convection answer for full marks.';
+      rows.push(['Fluid', m.convectionFluid, m.convectionFluid === 'water' ? 'liquid' : 'gas']);
+      rows.push(['Heater power', m.convectionPower, '0 = off · 10 = full']);
+      rows.push(['Mechanism', 'expansion → less dense → rises', 'four-step chain']);
+    } else {
+      const surf = m.radiationSurface;
+      const emissivity = { matt: 0.95, grey: 0.5, shiny: 0.10 }[surf];
+      emoji = '📡';
+      title = `Radiation from a ${surf} surface`;
+      text = `The surface emits <strong>infrared electromagnetic waves</strong>. Rate depends on <strong>surface colour/texture</strong>, <strong>surface temperature</strong>, and <strong>surface area</strong>. No medium required — this even works through a vacuum.`;
+      why = 'Why this matters: dark matt = best emitter/absorber. Shiny silver = best reflector, poor emitter.';
+      rows.push(['Surface', surf, `emissivity ε ≈ ${emissivity.toFixed(2)}`]);
+      rows.push(['Temperature', m.radiationT + '°C', 'hotter → more emission']);
+      rows.push(['Area factor', m.radiationArea + '×', 'larger area → more emission']);
+      rows.push(['Rate (relative)', (emissivity * (m.radiationT + 273) / 100 * m.radiationArea).toFixed(1), 'rough proxy']);
+    }
+  } else {
+    const t = gameState.thermos;
+    const activeCount = Object.values(t.features).filter(Boolean).length;
+    emoji = '☕';
+    if (t.finalTemp !== null) {
+      if (t.finalTemp >= 70) {
+        title = `Coffee finished at ${t.finalTemp.toFixed(1)} °C — SUCCESS`;
+        text = `Above the 70 °C target! Your flask minimised heat loss well. Active features: <strong>${activeCount}/5</strong>.`;
+        why = 'Why this matters: a real vacuum flask combines vacuum + silvered + insulated stopper — the same three modes.';
+      } else {
+        title = `Coffee finished at ${t.finalTemp.toFixed(1)} °C`;
+        text = `Below the 70 °C target. Try enabling more features to reduce all three modes of loss. Active: <strong>${activeCount}/5</strong>.`;
+        why = 'Why this matters: a real vacuum flask blocks conduction, convection AND radiation together.';
+      }
+    } else {
+      title = `Building your flask — ${activeCount}/5 features on`;
+      text = `Current heat-loss rate coefficient <strong>k = ${thComputeK().toFixed(3)}</strong>. Toggle features to reduce it, then press ▶ Start.`;
+      why = 'Why this matters: each feature attacks one mode — cover→convection, vacuum→conduction/convection, silvered→radiation.';
+    }
+    rows.push(['Time', t.time.toFixed(1) + ' s', 'of 60 s']);
+    rows.push(['Coffee temperature', t.temp.toFixed(1) + '°C', 'target ≥ 70°C at 60 s']);
+    rows.push(['Ambient', t.ambient + '°C', 'room temperature']);
+    rows.push(['Cover', t.features.cover ? '✅ on' : '—', 'reduces convection']);
+    rows.push(['Vacuum gap', t.features.vacuum ? '✅ on' : '—', 'reduces conduction + convection']);
+    rows.push(['Silvered inner', t.features.silvered ? '✅ on' : '—', 'reduces radiation']);
+    rows.push(['Insulated base', t.features.insulatedBase ? '✅ on' : '—', 'reduces conduction']);
+    rows.push(['Narrow mouth', t.features.narrowMouth ? '✅ on' : '—', 'reduces convection + radiation']);
+    rows.push(['Rate coefficient k', thComputeK().toFixed(3), 'lower = better']);
+  }
+
+  wrap.innerHTML = `
+    <div class="story-card">
+      <div class="story-headline"><div class="story-emoji">${emoji}</div><h3 class="story-title">${title}</h3></div>
+      <div class="story-text">${text}</div>
+      <div class="story-why">${why}</div>
+    </div>`;
+
+  bodyEl.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+}
+
+/* ============================================================================
+   SNAPSHOTS
+   ============================================================================ */
+function recordSnapshot(tab) {
+  const t = tab || gameState.currentTab;
+  const s = { tab: t, scenario: '', key: '', note: '' };
+  if (t === 'equilibrium') {
+    s.scenario = `${gameState.eq.TA_start}→${gameState.eq.TB_start} · ${gameState.eq.connector}`;
+    s.key = `T_A=${gameState.eq.TA.toFixed(1)}°C, T_B=${gameState.eq.TB.toFixed(1)}°C, t=${gameState.eq.time.toFixed(1)}s`;
+    s.note = `k = ${EQ_CONN_K[gameState.eq.connector].toFixed(3)}`;
+  } else if (t === 'modes') {
+    if (gameState.modes.subMode === 'conduction') {
+      const k = COND_K[gameState.modes.conductionMaterial];
+      s.scenario = `Conduction · ${gameState.modes.conductionMaterial}`;
+      s.key = `k·ΔT = ${(k * (gameState.modes.conductionTHot - 20)).toFixed(1)}`;
+      s.note = `T_hot = ${gameState.modes.conductionTHot}°C`;
+    } else if (gameState.modes.subMode === 'convection') {
+      s.scenario = `Convection · ${gameState.modes.convectionFluid}`;
+      s.key = `power = ${gameState.modes.convectionPower}/10`;
+      s.note = '';
+    } else {
+      const em = { matt: 0.95, grey: 0.5, shiny: 0.10 }[gameState.modes.radiationSurface];
+      s.scenario = `Radiation · ${gameState.modes.radiationSurface}`;
+      s.key = `ε·T·A ≈ ${(em * (gameState.modes.radiationT + 273) / 100 * gameState.modes.radiationArea).toFixed(1)}`;
+      s.note = `T = ${gameState.modes.radiationT}°C, area ${gameState.modes.radiationArea}×`;
+    }
+  } else {
+    const active = Object.entries(gameState.thermos.features).filter(([k,v]) => v).map(([k]) => k).join(', ') || '(none)';
+    s.scenario = `Thermos · ${active}`;
+    s.key = `final = ${gameState.thermos.temp.toFixed(1)}°C @ t=${gameState.thermos.time.toFixed(1)}s`;
+    s.note = `k = ${thComputeK().toFixed(3)}`;
+  }
+  gameState.snapshots.push(s);
+  renderSnapshots();
+  showNotification('Snapshot saved', s.scenario, 'success');
+}
+
+function renderSnapshots() {
+  const body = document.getElementById('snapBody');
+  if (gameState.snapshots.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">(no snapshots yet)</td></tr>';
+    return;
+  }
+  body.innerHTML = gameState.snapshots.map((s, i) =>
+    `<tr><td>${i+1}</td><td>${s.tab}</td><td>${s.scenario}</td><td>${s.key}</td><td>${s.note}</td></tr>`
+  ).join('');
+}
+
+function clearSnapshots() {
+  gameState.snapshots = [];
+  renderSnapshots();
+}
+
+/* ============================================================================
+   BADGES + CELEBRATION
+   ============================================================================ */
+function unlockBadge(id, msg) {
+  if (gameState.badges[id]) return;
+  gameState.badges[id] = true;
+  const el = document.getElementById('badge-'+id);
+  if (el) el.classList.add('earned');
+  showNotification('Badge earned!', msg, 'success');
+  // Check master
+  if (gameState.badges.bronze && gameState.badges.silver && gameState.badges.gold && gameState.badges.event && !gameState.badges.master) {
+    gameState.badges.master = true;
+    const m = document.getElementById('badge-master');
+    if (m) m.classList.add('earned');
+    showNotification('🌟 THERMOS MASTER!', 'You unlocked every badge — every mode of heat transfer mastered.', 'success');
+    celebrate();
+  }
+}
+
+function celebrate() {
+  const colors = ['#f97316','#fb923c','#ffffff','#a3a3a3','#d4d4d4'];
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+  for (let k = 0; k < 60; k++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.background = colors[k % colors.length];
+    p.style.animationDelay = (Math.random() * 0.4) + 's';
+    layer.appendChild(p);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2400);
+}
+
+/* ============================================================================
+   NOTIFICATIONS
+   ============================================================================ */
+function showNotification(title, msg, type='info') {
+  const div = document.createElement('div');
+  div.className = 'notif ' + type;
+  div.innerHTML = `<div class="ntitle">${title}</div><div class="nmsg">${msg}</div>`;
+  document.body.appendChild(div);
+  setTimeout(() => { div.style.opacity = '0'; div.style.transform = 'translateX(400px)'; }, 2400);
+  setTimeout(() => div.remove(), 2800);
+}
+
+/* ============================================================================
+   SAVE / LOAD
+   ============================================================================ */
+function keyFor(name) { return `${STATE_PREFIX}_${name || 'anon'}`; }
+
+function saveState() {
+  const name = document.getElementById('username').value.trim() || 'anon';
+  const s = {
+    displayName: document.getElementById('displayName').value,
+    predict: document.getElementById('predictText').value,
+    explain: document.getElementById('explainText').value,
+    logLearnt: document.getElementById('logLearnt').value,
+    logConfusing: document.getElementById('logConfusing').value,
+    vocab: [document.getElementById('vocab1').value, document.getElementById('vocab2').value, document.getElementById('vocab3').value],
+    snapshots: gameState.snapshots,
+    badges: gameState.badges
+  };
+  localStorage.setItem(keyFor(name), JSON.stringify(s));
+  showNotification('Saved!', `Saved for ${name}`, 'success');
+}
+function loadState() {
+  const name = document.getElementById('username').value.trim() || 'anon';
+  const raw = localStorage.getItem(keyFor(name));
+  if (!raw) { showNotification('Not found', 'No saved state for ' + name, 'warning'); return; }
+  try {
+    const s = JSON.parse(raw);
+    document.getElementById('displayName').value = s.displayName || '';
+    document.getElementById('predictText').value = s.predict || '';
+    document.getElementById('explainText').value = s.explain || '';
+    document.getElementById('logLearnt').value = s.logLearnt || '';
+    document.getElementById('logConfusing').value = s.logConfusing || '';
+    (s.vocab || []).forEach((v, i) => { const el = document.getElementById('vocab'+(i+1)); if (el) el.value = v || ''; });
+    gameState.snapshots = s.snapshots || [];
+    gameState.badges = Object.assign(gameState.badges, s.badges || {});
+    for (const k of Object.keys(gameState.badges)) {
+      if (gameState.badges[k]) document.getElementById('badge-'+k)?.classList.add('earned');
+    }
+    renderSnapshots();
+    showNotification('Loaded', `Restored for ${name}`, 'success');
+  } catch(e) { showNotification('Load failed', e.message, 'warning'); }
+}
+function resetState() {
+  if (!confirm('Reset all fields, snapshots, and badges?')) return;
+  ['predictText','explainText','logLearnt','logConfusing','vocab1','vocab2','vocab3'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  gameState.snapshots = [];
+  gameState.badges = { bronze:false, silver:false, gold:false, event:false, master:false };
+  document.querySelectorAll('.badge').forEach(b => b.classList.remove('earned'));
+  renderSnapshots();
+  eqReset();
+  thReset();
+  showNotification('Reset', 'All local state cleared', 'info');
+}
+
+/* ============================================================================
+   DRAW ALL + INIT
+   ============================================================================ */
+function drawAll() {
+  drawEq();
+  drawEqGraph();
+  drawModeCanvas();
+  drawThermos();
+  drawThermosMission();
+}
+
+function init() {
+  loadIntros();
+  eqUpdateSliders();
+  modeUpdate();
+  eqSetConnector('copper');
+  modeSetSub('conduction');
+  gameState.modes.testedModes = {}; // reset — silver only unlocks after student actually switches
+  renderSnapshots();
+  sizeAll();
+  drawAll();
+  updateStoryCard();
+  modeStartAnim();
+  window.addEventListener('resize', () => { sizeAll(); drawAll(); });
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

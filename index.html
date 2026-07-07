@@ -158,8 +158,8 @@
     <div class="brand">Curious<span class="spark">✷</span>Space</div>
     <div class="tagline">Explore science through hands-on cosmic simulations 🚀</div>
     <div class="stats">
-      <div class="stat"><div class="num" data-count="5">0</div><div class="lbl">Simulations</div></div>
-      <div class="stat"><div class="num" data-count="3">0</div><div class="lbl">Subjects</div></div>
+      <div class="stat"><div class="num" data-count="7">0</div><div class="lbl">Simulations</div></div>
+      <div class="stat"><div class="num" data-count="4">0</div><div class="lbl">Subjects</div></div>
       <div class="stat"><div class="num" data-count="100" data-suffix="%">0</div><div class="lbl">Interactive</div></div>
     </div>
   </header>
@@ -171,6 +171,7 @@
     </label>
     <div class="filters" id="filters">
       <button class="chip active" data-filter="all">🌌 All</button>
+      <button class="chip" data-filter="energy">🔋 Energy</button>
       <button class="chip" data-filter="thermal">🔥 Thermal</button>
       <button class="chip" data-filter="electricity">⚡ Electricity</button>
       <button class="chip" data-filter="light">💡 Light</button>
@@ -223,7 +224,13 @@
 
   /* ---------- Catalogue ---------- */
   const DATA = [
+    { cat: "energy", catLabel: "Energy", catIcon: "🔋", items: [
+      { title: "Energy Stores & Transfers", icon: "⚙️", tag: "Energy", href: "energy-stores-transfers.html",
+        desc: "Explore how energy is stored and transferred between systems." },
+    ]},
     { cat: "thermal", catLabel: "Thermal Physics", catIcon: "🔥", items: [
+      { title: "Thermal Processes", icon: "🌡️", tag: "Heat Flow", href: "thermal-processes.html",
+        desc: "Conduction, convection, and radiation in action." },
       { title: "Cooking Chef", icon: "👨‍🍳", tag: "Heat Transfer", href: "cooking-chef.html",
         desc: "Heat, temperature, and energy transfer in the kitchen." },
     ]},

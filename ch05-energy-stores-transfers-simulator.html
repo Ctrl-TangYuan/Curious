@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Stores & Transfers Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+:root{--bg:#0c1222;--card:#151d33;--card2:#1a2440;--gold:#f0b429;--cyan:#22d3ee;--rose:#fb7185;--green:#34d399;--violet:#a78bfa;--amber:#f59e0b;--txt:#e8ecf4;--txt2:#8b97b8;--muted:#5c6a8a;--bdr:#2a3654;--info:#60a5fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit',sans-serif;overflow-x:hidden}
+.header{background:linear-gradient(135deg,#1a1a3e,#2d1b69 40%,#0f3460);padding:28px 20px;text-align:center}
+.header h1{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--gold);margin-bottom:4px}
+.header p{color:var(--txt2);font-size:.95rem}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.section{background:var(--card);border:1px solid var(--bdr);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.section-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--cyan),var(--violet))}
+.section-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--gold);padding:14px 18px 0}
+.section-body{padding:14px 18px 18px}
+.info-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.info-row input{background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;flex:1;min-width:120px}
+.info-row input:focus{outline:none;border-color:var(--cyan)}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .2s}
+.btn-gold{background:var(--gold);color:#1a1a3e}.btn-gold:hover{background:#d49a20}
+.btn-cyan{background:var(--cyan);color:#0c1222}.btn-cyan:hover{background:#18b8d0}
+.btn-rose{background:var(--rose);color:#fff}.btn-rose:hover{background:#e5616f}
+.btn-green{background:var(--green);color:#0c1222}.btn-green:hover{background:#28b886}
+.btn-violet{background:var(--violet);color:#fff}.btn-violet:hover{background:#8b6fe0}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-outline{background:transparent;border:1px solid var(--bdr);color:var(--txt2)}.btn-outline:hover{border-color:var(--cyan);color:var(--cyan)}
+textarea{width:100%;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:10px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;resize:vertical;min-height:60px}
+textarea:focus{outline:none;border-color:var(--cyan)}
+
+/* Tabs */
+.tab-row{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.tab-btn{padding:8px 18px;border:1px solid var(--bdr);border-radius:8px 8px 0 0;background:var(--card2);color:var(--txt2);font-family:'Outfit',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:var(--gold);color:#1a1a3e;border-color:var(--gold)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* Sim area */
+.sim-wrapper{display:grid;grid-template-columns:1fr 300px;gap:16px}
+@media(max-width:850px){.sim-wrapper{grid-template-columns:1fr}.controls-panel{order:-1}}
+.sim-canvas{background:linear-gradient(180deg,#0f1a30,#162040 50%,#1a2850);border-radius:12px;border:1px solid var(--bdr);position:relative;height:450px;overflow:hidden}
+.ground{position:absolute;bottom:0;left:0;right:0;height:40px;background:repeating-linear-gradient(90deg,#2a3654 0px,#2a3654 2px,transparent 2px,transparent 20px),linear-gradient(180deg,#1e2d4a,#15213a);border-top:2px solid #3a4a6a}
+
+/* Energy bars canvas */
+.energy-bars{position:absolute;right:10px;top:10px;width:120px;bottom:50px;z-index:10}
+.energy-bars canvas{width:100%;height:100%}
+
+/* Ball */
+.sim-ball{position:absolute;border-radius:50%;z-index:15;transition:none}
+
+/* Height marker */
+.height-marker{position:absolute;left:10px;top:10px;bottom:50px;width:40px;z-index:10}
+.height-marker canvas{width:100%;height:100%}
+
+/* Spring vis */
+.spring-vis{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:5}
+
+/* Pendulum */
+.pendulum-pivot{position:absolute;top:30px;left:50%;width:12px;height:12px;background:var(--gold);border-radius:50%;transform:translateX(-50%);z-index:15}
+
+/* Controls */
+.controls-panel{display:flex;flex-direction:column;gap:10px}
+.ctrl-card{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:12px}
+.ctrl-label{font-weight:600;font-size:.85rem;color:var(--txt2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.ctrl-val{font-family:'JetBrains Mono',monospace;color:var(--cyan);font-weight:700}
+input[type=range]{width:100%;height:6px;-webkit-appearance:none;background:var(--bdr);border-radius:3px;outline:none;margin:4px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer;background:var(--cyan)}
+.slider-gold::-webkit-slider-thumb{background:var(--gold)}
+.slider-violet::-webkit-slider-thumb{background:var(--violet)}
+.slider-rose::-webkit-slider-thumb{background:var(--rose)}
+.slider-green::-webkit-slider-thumb{background:var(--green)}
+.ctrl-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chk-label{font-size:.82rem;color:var(--txt2);display:flex;align-items:center;gap:5px;cursor:pointer}
+.chk-label input[type=checkbox]{accent-color:var(--cyan)}
+
+/* Stats grid */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.scard{background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center}
+.sv{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700}
+.sl{font-size:.7rem;color:var(--txt2);margin-top:2px}
+.sfull{grid-column:1/-1}
+
+/* Observe table */
+.obs-table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+.obs-table th{background:var(--card2);color:var(--gold);padding:8px;text-align:left;border:1px solid var(--bdr);font-weight:600}
+.obs-table td{padding:7px 8px;border:1px solid var(--bdr);font-family:'JetBrains Mono',monospace}
+.obs-table tr:nth-child(even){background:rgba(26,36,64,.5)}
+
+/* Data table */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.data-table th{background:var(--card2);color:var(--cyan);padding:6px 8px;text-align:center;border:1px solid var(--bdr)}
+.data-table td{padding:5px 8px;border:1px solid var(--bdr);text-align:center;font-family:'JetBrains Mono',monospace}
+
+/* Badges */
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--bdr);transition:all .3s}
+.badge.earned{animation:badgePop .4s ease;border-color:var(--gold);color:var(--gold);background:rgba(240,180,41,.1)}
+
+/* Challenges */
+.challenge-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:700px){.challenge-grid{grid-template-columns:1fr}}
+.challenge-card{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s}
+.challenge-card:hover{border-color:var(--cyan);transform:translateY(-2px)}
+.challenge-card.active{border-color:var(--gold);background:rgba(240,180,41,.08)}
+.challenge-card.solved{border-color:var(--green);background:rgba(52,211,153,.08)}
+.ch-title{font-weight:600;font-size:.9rem;margin-bottom:4px}
+.ch-desc{font-size:.78rem;color:var(--txt2);line-height:1.3}
+.challenge-status{margin-top:10px;padding:10px;border-radius:8px;text-align:center;font-weight:600;font-size:.9rem}
+
+/* Quiz */
+.quiz-q{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:10px}
+.quiz-q .q-text{font-weight:600;font-size:.9rem;margin-bottom:8px}
+.quiz-q label{display:block;padding:6px 10px;margin:3px 0;border-radius:6px;font-size:.85rem;cursor:pointer;transition:background .2s}
+.quiz-q label:hover{background:rgba(34,211,238,.08)}
+.quiz-q label input{margin-right:8px;accent-color:var(--cyan)}
+.quiz-q.correct{border-color:var(--green);background:rgba(52,211,153,.06)}
+.quiz-q.incorrect{border-color:var(--rose);background:rgba(251,113,133,.06)}
+.quiz-result{text-align:center;padding:16px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;margin-top:12px}
+
+/* Notification */
+.notif{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:10px;z-index:1000;animation:slideIn .3s ease;backdrop-filter:blur(10px);max-width:320px}
+.notif.success{background:rgba(52,211,153,.2);border:1px solid rgba(52,211,153,.4);color:var(--green)}
+.notif.warning{background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.4);color:var(--amber)}
+.notif.info{background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.4);color:var(--info)}
+.ntitle{font-weight:700;font-size:.9rem}.nmsg{font-size:.8rem;margin-top:2px;opacity:.8}
+
+/* Vocab */
+.vocab-row{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.vocab-row input{flex:1;min-width:100px;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem}
+.vocab-row input:focus{outline:none;border-color:var(--cyan)}
+
+/* Energy value display overlay */
+.energy-readout{position:absolute;left:60px;top:10px;z-index:20;font-family:'JetBrains Mono',monospace;font-size:.75rem;background:rgba(12,18,34,.85);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;line-height:1.6}
+.energy-readout .er-label{color:var(--txt2)}
+.er-gpe{color:var(--violet)}.er-ke{color:var(--cyan)}.er-epe{color:var(--green)}.er-heat{color:var(--rose)}.er-total{color:var(--gold)}
+
+/* Animations */
+@keyframes badgePop{0%{transform:scale(.5)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* Print */
+@media print{
+.no-print{display:none!important}
+body{background:#fff;color:#000}
+.section{border:2px solid #333!important;background:#fff!important;break-inside:avoid}
+textarea{border:2px solid #333!important;background:#f9f9f9!important;color:#000!important;-webkit-print-color-adjust:exact}
+.header{background:#eee!important;-webkit-print-color-adjust:exact}
+.header h1{color:#333!important}.header p{color:#666!important}
+canvas{display:none!important}
+@page{margin:3cm 1.5cm 1cm 1.5cm}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+<h1>&#9889; Energy Stores &amp; Transfers</h1>
+<p>Sec 3 Science (NA) &mdash; Chapter 5: Energy</p>
+</div>
+
+<div class="container">
+
+<!-- Student Info -->
+<div class="section no-print">
+<div class="section-bar"></div>
+<div class="section-body">
+<div class="info-row">
+<input type="text" id="username" placeholder="Username">
+<input type="text" id="displayName" placeholder="Display Name">
+<button class="btn btn-gold btn-sm" onclick="saveState()">Save</button>
+<button class="btn btn-cyan btn-sm" onclick="loadState()">Load</button>
+<button class="btn btn-rose btn-sm" onclick="resetAll()">Reset</button>
+</div>
+</div>
+</div>
+
+<!-- POE: Predict -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Predict</div>
+<div class="section-body">
+<p style="font-size:.85rem;color:var(--txt2);margin-bottom:8px">Before exploring, predict: When a ball is dropped from a height, what happens to its gravitational potential energy and kinetic energy as it falls? Is the total energy conserved? What happens if there is air resistance?</p>
+<textarea id="predictText" rows="3" placeholder="Write your prediction here..."></textarea>
+</div>
+</div>
+
+<!-- POE: Observe -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Observe</div>
+<div class="section-body">
+<div id="observeText" style="font-size:.85rem;color:var(--txt2)">Run a simulation below to see real-time energy data here.</div>
+</div>
+</div>
+
+<!-- Simulation -->
+<div class="section no-print">
+<div class="section-bar"></div>
+<div class="section-title">Interactive Simulation</div>
+<div class="section-body">
+
+<!-- Scenario Tabs -->
+<div class="tab-row">
+<button class="tab-btn active" onclick="switchScenario('drop')">Free Fall</button>
+<button class="tab-btn" onclick="switchScenario('spring')">Spring Launcher</button>
+<button class="tab-btn" onclick="switchScenario('pendulum')">Pendulum</button>
+</div>
+
+<div class="sim-wrapper">
+<!-- Canvas area -->
+<div class="sim-canvas" id="simCanvas">
+<canvas id="mainCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:5"></canvas>
+<div class="energy-readout" id="energyReadout">
+<span class="er-label">GPE:</span> <span class="er-gpe" id="erGPE">0.0 J</span><br>
+<span class="er-label">KE:</span> <span class="er-ke" id="erKE">0.0 J</span><br>
+<span class="er-label">EPE:</span> <span class="er-epe" id="erEPE">0.0 J</span><br>
+<span class="er-label">Heat:</span> <span class="er-heat" id="erHeat">0.0 J</span><br>
+<span style="border-top:1px solid var(--bdr);display:block;margin:2px 0"></span>
+<span class="er-label">Total:</span> <span class="er-total" id="erTotal">0.0 J</span>
+</div>
+</div>
+
+<!-- Controls -->
+<div class="controls-panel" id="controlsPanel">
+<!-- Drop controls -->
+<div id="ctrlDrop">
+<div class="ctrl-card">
+<div class="ctrl-label">Height <span class="ctrl-val" id="valHeight">10.0 m</span></div>
+<input type="range" id="sliderHeight" min="1" max="20" step="0.5" value="10" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<div class="ctrl-label">Mass <span class="ctrl-val" id="valMass">2.0 kg</span></div>
+<input type="range" id="sliderMass" min="0.5" max="5" step="0.1" value="2" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<label class="chk-label"><input type="checkbox" id="chkFriction" onchange="updateSliders()"> Air Resistance (energy lost to heat)</label>
+<div id="frictionSliderWrap" style="display:none;margin-top:6px">
+<div class="ctrl-label">Drag coefficient <span class="ctrl-val" id="valDrag">0.10</span></div>
+<input type="range" class="slider-rose" id="sliderDrag" min="0.01" max="0.3" step="0.01" value="0.1" oninput="updateSliders()">
+</div>
+</div>
+<div class="ctrl-row">
+<button class="btn btn-green" onclick="startDrop()">Drop Ball</button>
+<button class="btn btn-outline btn-sm" onclick="resetSim()">Reset</button>
+<button class="btn btn-cyan btn-sm" onclick="recordSnapshot()">Record</button>
+</div>
+</div>
+
+<!-- Spring controls -->
+<div id="ctrlSpring" style="display:none">
+<div class="ctrl-card">
+<div class="ctrl-label">Spring Constant <span class="ctrl-val" id="valSpringK">200 N/m</span></div>
+<input type="range" class="slider-green" id="sliderSpringK" min="50" max="500" step="10" value="200" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<div class="ctrl-label">Compression <span class="ctrl-val" id="valCompress">0.30 m</span></div>
+<input type="range" class="slider-green" id="sliderCompress" min="0.05" max="0.6" step="0.01" value="0.3" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<div class="ctrl-label">Ball Mass <span class="ctrl-val" id="valSpringMass">1.0 kg</span></div>
+<input type="range" id="sliderSpringMass" min="0.5" max="5" step="0.1" value="1" oninput="updateSliders()">
+</div>
+<div class="ctrl-row">
+<button class="btn btn-green" onclick="launchSpring()">Launch</button>
+<button class="btn btn-outline btn-sm" onclick="resetSim()">Reset</button>
+<button class="btn btn-cyan btn-sm" onclick="recordSnapshot()">Record</button>
+</div>
+</div>
+
+<!-- Pendulum controls -->
+<div id="ctrlPendulum" style="display:none">
+<div class="ctrl-card">
+<div class="ctrl-label">String Length <span class="ctrl-val" id="valPendLen">2.0 m</span></div>
+<input type="range" class="slider-violet" id="sliderPendLen" min="0.5" max="4" step="0.1" value="2" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<div class="ctrl-label">Release Angle <span class="ctrl-val" id="valPendAngle">45&deg;</span></div>
+<input type="range" class="slider-violet" id="sliderPendAngle" min="10" max="80" step="1" value="45" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<div class="ctrl-label">Bob Mass <span class="ctrl-val" id="valPendMass">1.5 kg</span></div>
+<input type="range" id="sliderPendMass" min="0.5" max="5" step="0.1" value="1.5" oninput="updateSliders()">
+</div>
+<div class="ctrl-card">
+<label class="chk-label"><input type="checkbox" id="chkPendDamp" onchange="updateSliders()"> Damping (air resistance)</label>
+</div>
+<div class="ctrl-row">
+<button class="btn btn-green" onclick="startPendulum()">Release</button>
+<button class="btn btn-outline btn-sm" onclick="resetSim()">Reset</button>
+<button class="btn btn-cyan btn-sm" onclick="recordSnapshot()">Record</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Stats -->
+<div class="sgrid" id="statsGrid">
+<div class="scard"><div class="sv" id="statGPE" style="color:var(--violet)">0.0 J</div><div class="sl">Gravitational PE</div></div>
+<div class="scard"><div class="sv" id="statKE" style="color:var(--cyan)">0.0 J</div><div class="sl">Kinetic Energy</div></div>
+<div class="scard"><div class="sv" id="statEPE" style="color:var(--green)">0.0 J</div><div class="sl">Elastic PE</div></div>
+<div class="scard"><div class="sv" id="statHeat" style="color:var(--rose)">0.0 J</div><div class="sl">Internal (Heat)</div></div>
+<div class="scard"><div class="sv" id="statTotal" style="color:var(--gold)">0.0 J</div><div class="sl">Total Energy</div></div>
+<div class="scard"><div class="sv" id="statSpeed" style="color:var(--info)">0.0 m/s</div><div class="sl">Speed</div></div>
+</div>
+
+</div>
+</div>
+
+<!-- Challenges -->
+<div class="section no-print">
+<div class="section-bar"></div>
+<div class="section-title">Challenges</div>
+<div class="section-body">
+<div class="challenge-grid" id="challengeGrid">
+<div class="challenge-card" id="ch1Card" onclick="startChallenge('ch1')">
+<div class="ch-title">&#128269; Energy Detective</div>
+<div class="ch-desc">Identify all energy stores involved in given scenarios. Match each scenario to its energy transfers.</div>
+</div>
+<div class="challenge-card" id="ch2Card" onclick="startChallenge('ch2')">
+<div class="ch-title">&#128290; Calculate the Energy</div>
+<div class="ch-desc">Solve GPE and KE problems. Use the correct formulas with given values.</div>
+</div>
+<div class="challenge-card" id="ch3Card" onclick="startChallenge('ch3')">
+<div class="ch-title">&#9878; Conservation Check</div>
+<div class="ch-desc">Predict the final speed of a falling object using conservation of energy.</div>
+</div>
+</div>
+<div id="challengeArea" style="margin-top:12px"></div>
+</div>
+</div>
+
+<!-- Quiz -->
+<div class="section no-print">
+<div class="section-bar"></div>
+<div class="section-title">Assessment (5 Marks)</div>
+<div class="section-body">
+<div id="quizArea">
+<div class="quiz-q" id="q1">
+<div class="q-text">Q1 (1m): A ball at the top of a hill has what type of energy store?</div>
+<label><input type="radio" name="q1" value="a"> Kinetic energy store</label>
+<label><input type="radio" name="q1" value="b"> Gravitational potential energy store</label>
+<label><input type="radio" name="q1" value="c"> Elastic potential energy store</label>
+<label><input type="radio" name="q1" value="d"> Internal (thermal) energy store</label>
+</div>
+<div class="quiz-q" id="q2">
+<div class="q-text">Q2 (1m): The formula for kinetic energy is:</div>
+<label><input type="radio" name="q2" value="a"> KE = mgh</label>
+<label><input type="radio" name="q2" value="b"> KE = mv</label>
+<label><input type="radio" name="q2" value="c"> KE = &frac12;mv&sup2;</label>
+<label><input type="radio" name="q2" value="d"> KE = &frac12;kx&sup2;</label>
+</div>
+<div class="quiz-q" id="q3">
+<div class="q-text">Q3 (1m): When a ball falls freely (no air resistance), gravitational PE is converted to:</div>
+<label><input type="radio" name="q3" value="a"> Elastic potential energy</label>
+<label><input type="radio" name="q3" value="b"> Kinetic energy</label>
+<label><input type="radio" name="q3" value="c"> Chemical energy</label>
+<label><input type="radio" name="q3" value="d"> Nuclear energy</label>
+</div>
+<div class="quiz-q" id="q4">
+<div class="q-text">Q4 (1m): A 2 kg object is at a height of 5 m. Calculate its GPE. (Take g = 10 m/s&sup2;)</div>
+<label><input type="radio" name="q4" value="a"> 10 J</label>
+<label><input type="radio" name="q4" value="b"> 50 J</label>
+<label><input type="radio" name="q4" value="c"> 100 J</label>
+<label><input type="radio" name="q4" value="d"> 200 J</label>
+</div>
+<div class="quiz-q" id="q5">
+<div class="q-text">Q5 (1m): Which energy transfer occurs when you stretch a rubber band?</div>
+<label><input type="radio" name="q5" value="a"> Chemical to kinetic energy</label>
+<label><input type="radio" name="q5" value="b"> Kinetic to gravitational PE</label>
+<label><input type="radio" name="q5" value="c"> Chemical (in muscles) to elastic PE</label>
+<label><input type="radio" name="q5" value="d"> Nuclear to internal energy</label>
+</div>
+</div>
+<div style="margin-top:12px;text-align:center">
+<button class="btn btn-gold" onclick="submitQuiz()">Submit Quiz</button>
+</div>
+<div class="quiz-result" id="quizResult" style="display:none"></div>
+</div>
+</div>
+
+<!-- Badges -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Badges</div>
+<div class="section-body">
+<div class="badge-row">
+<div class="badge" id="badge-bronze">&#129353; Bronze &mdash; 1 Challenge</div>
+<div class="badge" id="badge-silver">&#129352; Silver &mdash; All Challenges</div>
+<div class="badge" id="badge-gold">&#129351; Gold &mdash; Quiz 5/5</div>
+<div class="badge" id="badge-master">&#127775; Master &mdash; All + POE</div>
+</div>
+</div>
+</div>
+
+<!-- POE: Explain -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Explain</div>
+<div class="section-body">
+<p style="font-size:.85rem;color:var(--txt2);margin-bottom:8px">After exploring, explain: How does energy transfer between stores during free fall? Why is total energy conserved? What role does friction/air resistance play?</p>
+<textarea id="explainText" rows="3" placeholder="Explain what you observed..."></textarea>
+</div>
+</div>
+
+<!-- Data Recording -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Data Recording</div>
+<div class="section-body">
+<div style="overflow-x:auto">
+<table class="data-table" id="dataTable">
+<thead>
+<tr><th>#</th><th>Scenario</th><th>Mass (kg)</th><th>Height (m)</th><th>GPE (J)</th><th>KE (J)</th><th>EPE (J)</th><th>Heat (J)</th><th>Speed (m/s)</th><th>Total (J)</th></tr>
+</thead>
+<tbody id="dataBody"></tbody>
+</table>
+</div>
+<p style="font-size:.78rem;color:var(--muted);margin-top:6px">Click "Record" during simulation to capture a snapshot.</p>
+</div>
+</div>
+
+<!-- Learning Log -->
+<div class="section">
+<div class="section-bar"></div>
+<div class="section-title">Learning Log</div>
+<div class="section-body">
+<label style="font-size:.85rem;color:var(--txt2)">What I learnt today:</label>
+<textarea id="learntText" rows="2" placeholder="Today I learnt that..." style="margin-top:4px"></textarea>
+<label style="font-size:.85rem;color:var(--txt2);margin-top:10px;display:block">What I found confusing:</label>
+<textarea id="confusingText" rows="2" placeholder="I found it confusing when..." style="margin-top:4px"></textarea>
+<label style="font-size:.85rem;color:var(--txt2);margin-top:10px;display:block">Key vocabulary (3 terms):</label>
+<div class="vocab-row">
+<input type="text" id="vocab1" placeholder="Term 1">
+<input type="text" id="vocab2" placeholder="Term 2">
+<input type="text" id="vocab3" placeholder="Term 3">
+</div>
+</div>
+</div>
+
+<!-- Print -->
+<div class="section no-print" style="text-align:center">
+<div class="section-body">
+<button class="btn btn-gold" onclick="window.print()">&#128438; Print / Save as PDF</button>
+</div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+/* ====== CONFIG ====== */
+const GAME_CONFIG = { id: 'ch05na', title: 'Energy Stores & Transfers' };
+const G = 10; // gravitational field strength m/s^2
+
+let gameState = {
+    scenario: 'drop',
+    running: false,
+    snapshotCount: 0,
+    challengesSolved: 0,
+    challengeStates: { ch1: false, ch2: false, ch3: false },
+    activeChallenge: null,
+    quizScore: -1,
+    badges: { bronze: false, silver: false, gold: false, master: false }
+};
+
+/* Physics state */
+let sim = {
+    // Drop
+    height0: 10, mass: 2, drag: 0.1, useFriction: false,
+    y: 0, vy: 0, t: 0,
+    // Spring
+    springK: 200, compress: 0.3, springMass: 1,
+    sy: 0, svy: 0, springPhase: 'ready', naturalLen: 0,
+    // Pendulum
+    pendLen: 2, pendAngle0: 45, pendMass: 1.5, pendDamp: false,
+    theta: 0, omega: 0,
+    // Energy
+    gpe: 0, ke: 0, epe: 0, heat: 0, totalE: 0, speed: 0
+};
+
+let animId = null;
+let lastTime = 0;
+
+/* ====== CANVAS ====== */
+const canvasEl = document.getElementById('mainCanvas');
+const ctx = canvasEl.getContext('2d');
+
+function resizeCanvas() {
+    const box = document.getElementById('simCanvas');
+    canvasEl.width = box.clientWidth * 2;
+    canvasEl.height = box.clientHeight * 2;
+    canvasEl.style.width = box.clientWidth + 'px';
+    canvasEl.style.height = box.clientHeight + 'px';
+    ctx.scale(2, 2);
+    drawScene();
+}
+
+/* ====== SLIDERS ====== */
+function updateSliders() {
+    sim.height0 = parseFloat(document.getElementById('sliderHeight').value);
+    sim.mass = parseFloat(document.getElementById('sliderMass').value);
+    sim.useFriction = document.getElementById('chkFriction').checked;
+    sim.drag = parseFloat(document.getElementById('sliderDrag').value);
+    document.getElementById('frictionSliderWrap').style.display = sim.useFriction ? 'block' : 'none';
+    document.getElementById('valHeight').textContent = sim.height0.toFixed(1) + ' m';
+    document.getElementById('valMass').textContent = sim.mass.toFixed(1) + ' kg';
+    document.getElementById('valDrag').textContent = sim.drag.toFixed(2);
+
+    sim.springK = parseFloat(document.getElementById('sliderSpringK').value);
+    sim.compress = parseFloat(document.getElementById('sliderCompress').value);
+    sim.springMass = parseFloat(document.getElementById('sliderSpringMass').value);
+    document.getElementById('valSpringK').textContent = sim.springK + ' N/m';
+    document.getElementById('valCompress').textContent = sim.compress.toFixed(2) + ' m';
+    document.getElementById('valSpringMass').textContent = sim.springMass.toFixed(1) + ' kg';
+
+    sim.pendLen = parseFloat(document.getElementById('sliderPendLen').value);
+    sim.pendAngle0 = parseFloat(document.getElementById('sliderPendAngle').value);
+    sim.pendMass = parseFloat(document.getElementById('sliderPendMass').value);
+    sim.pendDamp = document.getElementById('chkPendDamp').checked;
+    document.getElementById('valPendLen').textContent = sim.pendLen.toFixed(1) + ' m';
+    document.getElementById('valPendAngle').innerHTML = sim.pendAngle0 + '&deg;';
+    document.getElementById('valPendMass').textContent = sim.pendMass.toFixed(1) + ' kg';
+
+    if (!gameState.running) {
+        resetSimState();
+        drawScene();
+    }
+}
+
+/* ====== SCENARIO SWITCH ====== */
+function switchScenario(s) {
+    gameState.scenario = s;
+    stopSim();
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', ['drop','spring','pendulum'][i] === s);
+    });
+    document.getElementById('ctrlDrop').style.display = s === 'drop' ? 'block' : 'none';
+    document.getElementById('ctrlSpring').style.display = s === 'spring' ? 'block' : 'none';
+    document.getElementById('ctrlPendulum').style.display = s === 'pendulum' ? 'block' : 'none';
+    // Show/hide EPE in readout
+    document.getElementById('erEPE').parentElement.style.display = (s === 'spring') ? '' : 'none';
+    resetSimState();
+    drawScene();
+}
+
+/* ====== RESET SIM STATE ====== */
+function resetSimState() {
+    gameState.running = false;
+    sim.t = 0;
+    sim.heat = 0;
+
+    if (gameState.scenario === 'drop') {
+        sim.y = sim.height0;
+        sim.vy = 0;
+        sim.gpe = sim.mass * G * sim.height0;
+        sim.ke = 0;
+        sim.epe = 0;
+        sim.totalE = sim.gpe;
+        sim.speed = 0;
+    } else if (gameState.scenario === 'spring') {
+        sim.sy = 0;
+        sim.svy = 0;
+        sim.springPhase = 'ready';
+        sim.epe = 0.5 * sim.springK * sim.compress * sim.compress;
+        sim.gpe = 0;
+        sim.ke = 0;
+        sim.totalE = sim.epe;
+        sim.speed = 0;
+    } else if (gameState.scenario === 'pendulum') {
+        const a0 = sim.pendAngle0 * Math.PI / 180;
+        sim.theta = a0;
+        sim.omega = 0;
+        const h = sim.pendLen * (1 - Math.cos(a0));
+        sim.gpe = sim.pendMass * G * h;
+        sim.ke = 0;
+        sim.epe = 0;
+        sim.totalE = sim.gpe;
+        sim.speed = 0;
+    }
+    updateEnergyDisplay();
+}
+
+/* ====== STOP SIM ====== */
+function stopSim() {
+    gameState.running = false;
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+}
+function resetSim() {
+    stopSim();
+    resetSimState();
+    drawScene();
+}
+
+/* ====== START SIMULATIONS ====== */
+function startDrop() {
+    if (gameState.running) return;
+    resetSimState();
+    gameState.running = true;
+    lastTime = performance.now();
+    animId = requestAnimationFrame(animateDrop);
+}
+
+function animateDrop(now) {
+    if (!gameState.running) return;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    // Physics
+    let ay = -G;
+    if (sim.useFriction && sim.vy !== 0) {
+        const dragForce = sim.drag * sim.vy * sim.vy * (sim.vy > 0 ? -1 : 1);
+        // Actually for falling, vy < 0 so drag acts upward
+        const fd = sim.drag * sim.vy * Math.abs(sim.vy);
+        ay = -G + fd / sim.mass;
+    }
+    sim.vy += ay * dt;
+    sim.y += sim.vy * dt;
+
+    if (sim.y <= 0) {
+        sim.y = 0;
+        sim.vy = 0;
+        gameState.running = false;
+    }
+
+    sim.speed = Math.abs(sim.vy);
+    sim.gpe = sim.mass * G * Math.max(0, sim.y);
+    sim.ke = 0.5 * sim.mass * sim.speed * sim.speed;
+    sim.heat = sim.totalE - sim.gpe - sim.ke;
+    if (sim.heat < 0.001) sim.heat = 0;
+    sim.t += dt;
+
+    updateEnergyDisplay();
+    drawScene();
+    generateObservation();
+
+    if (gameState.running) animId = requestAnimationFrame(animateDrop);
+}
+
+function launchSpring() {
+    if (gameState.running) return;
+    resetSimState();
+    sim.springPhase = 'launching';
+    sim.sy = 0;
+    sim.svy = 0;
+    // Energy from spring: EPE = 0.5*k*x^2 -> v = sqrt(k*x^2/m)
+    const v0 = Math.sqrt(sim.springK * sim.compress * sim.compress / sim.springMass);
+    sim.svy = v0;
+    sim.totalE = 0.5 * sim.springK * sim.compress * sim.compress;
+    gameState.running = true;
+    lastTime = performance.now();
+    animId = requestAnimationFrame(animateSpring);
+}
+
+function animateSpring(now) {
+    if (!gameState.running) return;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    sim.svy -= G * dt;
+    sim.sy += sim.svy * dt;
+
+    if (sim.sy <= 0 && sim.svy <= 0) {
+        sim.sy = 0;
+        sim.svy = 0;
+        gameState.running = false;
+    }
+
+    sim.speed = Math.abs(sim.svy);
+    sim.gpe = sim.springMass * G * Math.max(0, sim.sy);
+    sim.ke = 0.5 * sim.springMass * sim.speed * sim.speed;
+    sim.epe = Math.max(0, sim.totalE - sim.gpe - sim.ke);
+    sim.heat = 0;
+    sim.t += dt;
+
+    updateEnergyDisplay();
+    drawScene();
+    generateObservation();
+
+    if (gameState.running) animId = requestAnimationFrame(animateSpring);
+}
+
+function startPendulum() {
+    if (gameState.running) return;
+    resetSimState();
+    gameState.running = true;
+    lastTime = performance.now();
+    animId = requestAnimationFrame(animatePendulum);
+}
+
+function animatePendulum(now) {
+    if (!gameState.running) return;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    // Angular acceleration: alpha = -(g/L)*sin(theta)
+    const alpha = -(G / sim.pendLen) * Math.sin(sim.theta);
+    sim.omega += alpha * dt;
+    if (sim.pendDamp) {
+        sim.omega *= (1 - 0.003); // small damping
+    }
+    sim.theta += sim.omega * dt;
+
+    // Height: h = L(1 - cos(theta))
+    const h = sim.pendLen * (1 - Math.cos(sim.theta));
+    sim.speed = Math.abs(sim.omega) * sim.pendLen;
+    sim.gpe = sim.pendMass * G * h;
+    sim.ke = 0.5 * sim.pendMass * sim.speed * sim.speed;
+    sim.epe = 0;
+    if (sim.pendDamp) {
+        sim.heat = sim.totalE - sim.gpe - sim.ke;
+        if (sim.heat < 0) sim.heat = 0;
+    } else {
+        sim.heat = 0;
+    }
+    sim.t += dt;
+
+    // Auto-stop after 20 seconds or if damped to near zero
+    if (sim.t > 20 || (sim.pendDamp && Math.abs(sim.omega) < 0.001 && Math.abs(sim.theta) < 0.005)) {
+        gameState.running = false;
+    }
+
+    updateEnergyDisplay();
+    drawScene();
+    generateObservation();
+
+    if (gameState.running) animId = requestAnimationFrame(animatePendulum);
+}
+
+/* ====== DRAWING ====== */
+function drawScene() {
+    const w = canvasEl.width / 2;
+    const h = canvasEl.height / 2;
+    ctx.clearRect(0, 0, w, h);
+
+    if (gameState.scenario === 'drop') drawDropScene(w, h);
+    else if (gameState.scenario === 'spring') drawSpringScene(w, h);
+    else if (gameState.scenario === 'pendulum') drawPendulumScene(w, h);
+
+    drawEnergyBars(w, h);
+}
+
+function drawDropScene(w, h) {
+    const groundY = h - 30;
+    const maxH = 20;
+    const pxPerM = (groundY - 60) / maxH;
+
+    // Ground
+    ctx.fillStyle = '#1e2d4a';
+    ctx.fillRect(0, groundY, w, 30);
+    ctx.strokeStyle = '#3a4a6a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
+
+    // Height ruler
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    for (let m = 0; m <= maxH; m += 2) {
+        const py = groundY - m * pxPerM;
+        ctx.beginPath(); ctx.moveTo(35, py); ctx.lineTo(45, py); ctx.stroke();
+        ctx.fillText(m + 'm', 33, py + 3);
+    }
+    ctx.restore();
+
+    // Ball
+    const ballRadius = 12 + sim.mass * 3;
+    const ballY = groundY - sim.y * pxPerM;
+    const ballX = w * 0.45;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(ballX, groundY - 2, ballRadius * 0.8, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ball gradient
+    const grad = ctx.createRadialGradient(ballX - 4, ballY - 4, 2, ballX, ballY, ballRadius);
+    grad.addColorStop(0, '#60a5fa');
+    grad.addColorStop(0.7, '#2563eb');
+    grad.addColorStop(1, '#1e40af');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ball highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(ballX - ballRadius * 0.3, ballY - ballRadius * 0.3, ballRadius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Height line
+    if (sim.y > 0.1) {
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(167,139,250,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ballX, ballY + ballRadius);
+        ctx.lineTo(ballX, groundY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = 'rgba(167,139,250,0.8)';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(sim.y.toFixed(1) + ' m', ballX, (ballY + groundY) / 2);
+    }
+
+    // Velocity arrow
+    if (Math.abs(sim.vy) > 0.5) {
+        const arrowLen = Math.min(60, Math.abs(sim.vy) * 4);
+        const arrowDir = sim.vy > 0 ? -1 : 1;
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(ballX + ballRadius + 10, ballY);
+        ctx.lineTo(ballX + ballRadius + 10, ballY + arrowLen * arrowDir);
+        ctx.stroke();
+        // Arrowhead
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath();
+        const tipY = ballY + arrowLen * arrowDir;
+        ctx.moveTo(ballX + ballRadius + 10, tipY + 6 * arrowDir);
+        ctx.lineTo(ballX + ballRadius + 5, tipY);
+        ctx.lineTo(ballX + ballRadius + 15, tipY);
+        ctx.fill();
+
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillStyle = '#22d3ee';
+        ctx.textAlign = 'left';
+        ctx.fillText(sim.speed.toFixed(1) + ' m/s', ballX + ballRadius + 18, ballY + arrowLen * arrowDir * 0.5);
+    }
+}
+
+function drawSpringScene(w, h) {
+    const groundY = h - 30;
+    const maxH = 15;
+    const pxPerM = (groundY - 80) / maxH;
+
+    // Ground
+    ctx.fillStyle = '#1e2d4a';
+    ctx.fillRect(0, groundY, w, 30);
+    ctx.strokeStyle = '#3a4a6a';
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
+
+    // Platform
+    ctx.fillStyle = '#2a3a5a';
+    ctx.fillRect(w * 0.4, groundY - 6, w * 0.2, 6);
+
+    const baseX = w * 0.5;
+    const baseY = groundY - 6;
+
+    // Spring
+    const springRestH = 60;
+    let springH;
+    if (sim.springPhase === 'ready') {
+        springH = springRestH - sim.compress * pxPerM * 0.5;
+    } else {
+        springH = springRestH;
+    }
+    if (springH < 15) springH = 15;
+
+    const springTop = baseY - springH;
+    const coils = 8;
+    const coilW = 14;
+
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    for (let i = 0; i <= coils; i++) {
+        const t = i / coils;
+        const y = baseY - t * springH;
+        const x = baseX + (i % 2 === 0 ? -coilW : coilW);
+        if (i === 0 || i === coils) ctx.lineTo(baseX, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Ball
+    const ballRadius = 10 + sim.springMass * 2.5;
+    let ballY;
+    if (sim.springPhase === 'ready') {
+        ballY = springTop - ballRadius;
+    } else {
+        ballY = groundY - sim.sy * pxPerM;
+        if (ballY > groundY - ballRadius) ballY = groundY - ballRadius;
+    }
+
+    const grad = ctx.createRadialGradient(baseX - 3, ballY - 3, 2, baseX, ballY, ballRadius);
+    grad.addColorStop(0, '#34d399');
+    grad.addColorStop(0.7, '#059669');
+    grad.addColorStop(1, '#065f46');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(baseX, ballY, ballRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.arc(baseX - ballRadius * 0.3, ballY - ballRadius * 0.3, ballRadius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Height ruler
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    for (let m = 0; m <= maxH; m += 2) {
+        const py = groundY - m * pxPerM;
+        ctx.beginPath(); ctx.moveTo(35, py); ctx.lineTo(45, py); ctx.stroke();
+        ctx.fillText(m + 'm', 33, py + 3);
+    }
+    ctx.restore();
+
+    // Height label if in air
+    if (sim.sy > 0.2 && sim.springPhase !== 'ready') {
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(167,139,250,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(baseX, ballY + ballRadius);
+        ctx.lineTo(baseX, groundY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(167,139,250,0.8)';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(sim.sy.toFixed(1) + ' m', baseX, (ballY + groundY) / 2);
+    }
+}
+
+function drawPendulumScene(w, h) {
+    const pivotX = w * 0.5;
+    const pivotY = 40;
+    const maxPixLen = h - 100;
+    const scale = maxPixLen / 4; // max 4m length maps to maxPixLen
+
+    const L = sim.pendLen * scale;
+    const theta = sim.theta;
+
+    const bobX = pivotX + L * Math.sin(theta);
+    const bobY = pivotY + L * Math.cos(theta);
+
+    // String
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(bobX, bobY);
+    ctx.stroke();
+
+    // Pivot
+    ctx.fillStyle = '#f0b429';
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Trail - lowest point line
+    const lowestY = pivotY + L;
+    ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.moveTo(pivotX - L, lowestY);
+    ctx.lineTo(pivotX + L, lowestY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vertical dashed line from pivot
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(pivotX, lowestY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Height indicator
+    const hPx = lowestY - bobY;
+    const hReal = sim.pendLen * (1 - Math.cos(sim.theta));
+    if (hReal > 0.01) {
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(167,139,250,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bobX + 20, bobY);
+        ctx.lineTo(bobX + 20, lowestY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(167,139,250,0.8)';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('h=' + hReal.toFixed(2) + 'm', bobX + 25, (bobY + lowestY) / 2);
+    }
+
+    // Bob
+    const bobR = 10 + sim.pendMass * 2.5;
+    const grad = ctx.createRadialGradient(bobX - 3, bobY - 3, 2, bobX, bobY, bobR);
+    grad.addColorStop(0, '#a78bfa');
+    grad.addColorStop(0.7, '#7c3aed');
+    grad.addColorStop(1, '#5b21b6');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, bobR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.arc(bobX - bobR * 0.3, bobY - bobR * 0.3, bobR * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Angle arc
+    if (Math.abs(theta) > 0.05) {
+        ctx.strokeStyle = 'rgba(240,180,41,0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const arcR = 40;
+        const start = Math.PI / 2 - Math.abs(theta);
+        const end = Math.PI / 2;
+        if (theta > 0) {
+            ctx.arc(pivotX, pivotY, arcR, Math.PI / 2 - theta, Math.PI / 2);
+        } else {
+            ctx.arc(pivotX, pivotY, arcR, Math.PI / 2, Math.PI / 2 - theta);
+        }
+        ctx.stroke();
+    }
+}
+
+function drawEnergyBars(w, h) {
+    const barX = w - 100;
+    const barW = 22;
+    const barTop = 50;
+    const barBot = h - 50;
+    const barH = barBot - barTop;
+    const total = sim.totalE || 1;
+
+    // Background
+    ctx.fillStyle = 'rgba(12,18,34,0.6)';
+    ctx.roundRect(barX - 15, barTop - 20, 90, barH + 40, 8);
+    ctx.fill();
+
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+
+    // GPE bar
+    const gpeH = (sim.gpe / total) * barH;
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillRect(barX, barBot - gpeH, barW, gpeH);
+    ctx.fillStyle = 'rgba(167,139,250,0.8)';
+    ctx.fillText('GPE', barX + barW / 2, barBot + 12);
+
+    // KE bar
+    const keH = (sim.ke / total) * barH;
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(barX + 30, barBot - keH, barW, keH);
+    ctx.fillStyle = 'rgba(34,211,238,0.8)';
+    ctx.fillText('KE', barX + 30 + barW / 2, barBot + 12);
+
+    // Heat bar (only if > 0)
+    if (sim.heat > 0.01) {
+        const heatH = (sim.heat / total) * barH;
+        ctx.fillStyle = '#fb7185';
+        ctx.fillRect(barX + 60, barBot - heatH, barW, heatH);
+        ctx.fillStyle = 'rgba(251,113,133,0.8)';
+        ctx.fillText('Heat', barX + 60 + barW / 2, barBot + 12);
+    }
+
+    // Bar outlines
+    [0, 30, 60].forEach(dx => {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX + dx, barTop, barW, barH);
+    });
+
+    // Title
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Outfit, sans-serif';
+    ctx.fillText('Energy', barX + 40, barTop - 6);
+}
+
+// Polyfill roundRect
+if (!ctx.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+    };
+}
+
+/* ====== ENERGY DISPLAY UPDATE ====== */
+function updateEnergyDisplay() {
+    document.getElementById('erGPE').textContent = sim.gpe.toFixed(1) + ' J';
+    document.getElementById('erKE').textContent = sim.ke.toFixed(1) + ' J';
+    document.getElementById('erEPE').textContent = sim.epe.toFixed(1) + ' J';
+    document.getElementById('erHeat').textContent = sim.heat.toFixed(1) + ' J';
+    document.getElementById('erTotal').textContent = sim.totalE.toFixed(1) + ' J';
+
+    document.getElementById('statGPE').textContent = sim.gpe.toFixed(1) + ' J';
+    document.getElementById('statKE').textContent = sim.ke.toFixed(1) + ' J';
+    document.getElementById('statEPE').textContent = sim.epe.toFixed(1) + ' J';
+    document.getElementById('statHeat').textContent = sim.heat.toFixed(1) + ' J';
+    document.getElementById('statTotal').textContent = sim.totalE.toFixed(1) + ' J';
+    document.getElementById('statSpeed').textContent = sim.speed.toFixed(1) + ' m/s';
+}
+
+/* ====== OBSERVATION ====== */
+function generateObservation() {
+    let currentH, currentM;
+    if (gameState.scenario === 'drop') {
+        currentH = sim.y; currentM = sim.mass;
+    } else if (gameState.scenario === 'spring') {
+        currentH = sim.sy; currentM = sim.springMass;
+    } else {
+        currentH = sim.pendLen * (1 - Math.cos(sim.theta)); currentM = sim.pendMass;
+    }
+
+    const gpeStatus = sim.gpe > sim.totalE * 0.6 ? 'color:var(--violet)' : sim.gpe > sim.totalE * 0.2 ? 'color:var(--amber)' : 'color:var(--muted)';
+    const keStatus = sim.ke > sim.totalE * 0.6 ? 'color:var(--cyan)' : sim.ke > sim.totalE * 0.2 ? 'color:var(--amber)' : 'color:var(--muted)';
+
+    const scenarioName = gameState.scenario === 'drop' ? 'Free Fall' : gameState.scenario === 'spring' ? 'Spring Launcher' : 'Pendulum';
+
+    let html = `<strong>Observation &mdash; ${scenarioName} (t = ${sim.t.toFixed(1)}s)</strong><br><br>
+    <table class="obs-table">
+    <thead><tr><th>Energy Store</th><th>Value</th><th>% of Total</th><th>Status</th></tr></thead>
+    <tbody>
+    <tr><td>Gravitational PE</td><td style="${gpeStatus}">${sim.gpe.toFixed(1)} J</td><td>${sim.totalE > 0 ? (sim.gpe / sim.totalE * 100).toFixed(0) : 0}%</td><td style="${gpeStatus}">${sim.gpe > sim.totalE * 0.5 ? 'Dominant' : sim.gpe > 0.1 ? 'Active' : 'Depleted'}</td></tr>
+    <tr><td>Kinetic Energy</td><td style="${keStatus}">${sim.ke.toFixed(1)} J</td><td>${sim.totalE > 0 ? (sim.ke / sim.totalE * 100).toFixed(0) : 0}%</td><td style="${keStatus}">${sim.ke > sim.totalE * 0.5 ? 'Dominant' : sim.ke > 0.1 ? 'Active' : 'Minimal'}</td></tr>`;
+    if (gameState.scenario === 'spring') {
+        html += `<tr><td>Elastic PE</td><td style="color:var(--green)">${sim.epe.toFixed(1)} J</td><td>${sim.totalE > 0 ? (sim.epe / sim.totalE * 100).toFixed(0) : 0}%</td><td>${sim.epe > 0.1 ? 'Stored' : 'Released'}</td></tr>`;
+    }
+    if (sim.heat > 0.01) {
+        html += `<tr><td>Internal (Heat)</td><td style="color:var(--rose)">${sim.heat.toFixed(1)} J</td><td>${sim.totalE > 0 ? (sim.heat / sim.totalE * 100).toFixed(0) : 0}%</td><td style="color:var(--rose)">Dissipated</td></tr>`;
+    }
+    html += `<tr style="font-weight:700"><td>Total Energy</td><td style="color:var(--gold)">${sim.totalE.toFixed(1)} J</td><td>100%</td><td style="color:var(--green)">Conserved</td></tr>`;
+    html += `</tbody></table>`;
+
+    if (sim.heat > sim.totalE * 0.1) {
+        html += `<div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.3);color:var(--rose);font-size:.82rem">Notice: ${sim.heat.toFixed(1)} J has been converted to internal (heat) energy due to friction/air resistance. This energy is no longer available as useful mechanical energy.</div>`;
+    }
+
+    document.getElementById('observeText').innerHTML = html;
+}
+
+/* ====== RECORD SNAPSHOT ====== */
+function recordSnapshot() {
+    gameState.snapshotCount++;
+    const scenarioName = gameState.scenario === 'drop' ? 'Free Fall' : gameState.scenario === 'spring' ? 'Spring' : 'Pendulum';
+    let mass, height;
+    if (gameState.scenario === 'drop') { mass = sim.mass; height = sim.y; }
+    else if (gameState.scenario === 'spring') { mass = sim.springMass; height = sim.sy; }
+    else { mass = sim.pendMass; height = sim.pendLen * (1 - Math.cos(sim.theta)); }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${gameState.snapshotCount}</td><td>${scenarioName}</td><td>${mass.toFixed(1)}</td><td>${height.toFixed(2)}</td><td style="color:var(--violet)">${sim.gpe.toFixed(1)}</td><td style="color:var(--cyan)">${sim.ke.toFixed(1)}</td><td style="color:var(--green)">${sim.epe.toFixed(1)}</td><td style="color:var(--rose)">${sim.heat.toFixed(1)}</td><td>${sim.speed.toFixed(1)}</td><td style="color:var(--gold)">${sim.totalE.toFixed(1)}</td>`;
+
+    const body = document.getElementById('dataBody');
+    body.insertBefore(row, body.firstChild);
+    showNotification('Recorded', 'Snapshot #' + gameState.snapshotCount + ' saved', 'info');
+}
+
+/* ====== CHALLENGES ====== */
+const CHALLENGES = {
+    ch1: {
+        title: 'Energy Detective',
+        setup() {
+            const scenarios = [
+                { text: 'A ball rolling down a hill', answer: ['GPE', 'KE'], display: 'GPE is converted to KE as the ball rolls downhill.' },
+                { text: 'A stretched rubber band being released', answer: ['EPE', 'KE'], display: 'Elastic PE is converted to KE when the band snaps back.' },
+                { text: 'A car braking to a stop', answer: ['KE', 'Heat'], display: 'KE is converted to internal (heat) energy in the brakes.' },
+                { text: 'A rocket launching upward', answer: ['Chemical', 'KE', 'GPE', 'Heat'], display: 'Chemical energy in fuel is converted to KE, GPE, and heat/sound.' },
+                { text: 'A pendulum swinging from highest point to lowest', answer: ['GPE', 'KE'], display: 'GPE at the top is converted to KE at the bottom.' }
+            ];
+            this.scenarios = scenarios;
+            this.current = 0;
+            this.score = 0;
+            return this.renderQ();
+        },
+        renderQ() {
+            const s = this.scenarios[this.current];
+            const options = ['GPE', 'KE', 'EPE', 'Chemical', 'Heat', 'Nuclear'];
+            let html = `<div style="padding:12px;background:var(--card2);border-radius:10px;border:1px solid var(--bdr)">
+            <p style="font-weight:600;margin-bottom:8px">Scenario ${this.current + 1}/5: "${s.text}"</p>
+            <p style="font-size:.82rem;color:var(--txt2);margin-bottom:8px">Select ALL energy stores/transfers involved:</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">`;
+            options.forEach(o => {
+                html += `<button class="btn btn-outline btn-sm ch1opt" data-val="${o}" onclick="toggleCh1Opt(this)">${o}</button>`;
+            });
+            html += `</div><div style="margin-top:10px"><button class="btn btn-green btn-sm" onclick="checkCh1Answer()">Check</button></div>
+            <div id="ch1Feedback" style="margin-top:8px"></div></div>`;
+            return html;
+        },
+        check() {
+            return this.current >= this.scenarios.length;
+        }
+    },
+    ch2: {
+        title: 'Calculate the Energy',
+        setup() {
+            this.problems = [
+                { q: 'A 3 kg ball is at a height of 8 m. Calculate its GPE. (g = 10 m/s\u00b2)', a: 240, unit: 'J', hint: 'GPE = mgh = 3 \u00d7 10 \u00d7 8' },
+                { q: 'A 2 kg object moves at 6 m/s. Calculate its KE.', a: 36, unit: 'J', hint: 'KE = \u00bdmv\u00b2 = \u00bd \u00d7 2 \u00d7 6\u00b2' },
+                { q: 'A spring with k = 400 N/m is compressed by 0.2 m. Calculate the EPE stored.', a: 8, unit: 'J', hint: 'EPE = \u00bdkx\u00b2 = \u00bd \u00d7 400 \u00d7 0.2\u00b2' },
+                { q: 'A 5 kg object falls from 10 m. What is its speed just before hitting the ground? (no air resistance)', a: 14.1, unit: 'm/s', hint: 'mgh = \u00bdmv\u00b2, v = \u221a(2gh) = \u221a(2\u00d710\u00d710)' }
+            ];
+            this.current = 0;
+            this.score = 0;
+            return this.renderQ();
+        },
+        renderQ() {
+            const p = this.problems[this.current];
+            return `<div style="padding:12px;background:var(--card2);border-radius:10px;border:1px solid var(--bdr)">
+            <p style="font-weight:600;margin-bottom:8px">Problem ${this.current + 1}/4:</p>
+            <p style="font-size:.9rem;margin-bottom:10px">${p.q}</p>
+            <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="ch2Answer" step="0.1" style="background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'JetBrains Mono',monospace;width:120px" placeholder="Answer">
+            <span style="color:var(--txt2)">${p.unit}</span>
+            <button class="btn btn-green btn-sm" onclick="checkCh2Answer()">Check</button>
+            </div>
+            <div id="ch2Feedback" style="margin-top:8px"></div></div>`;
+        },
+        check() { return this.current >= this.problems.length; }
+    },
+    ch3: {
+        title: 'Conservation Check',
+        setup() {
+            this.problems = [
+                { q: 'A 4 kg ball is dropped from 5 m. Using conservation of energy, what is its speed just before hitting the ground?', a: 10, unit: 'm/s', formula: 'mgh = \u00bdmv\u00b2 \u2192 v = \u221a(2gh) = \u221a(2\u00d710\u00d75) = 10 m/s' },
+                { q: 'A spring (k=800 N/m) compressed by 0.25 m launches a 0.5 kg ball. What is the maximum height reached?', a: 5, unit: 'm', formula: '\u00bdkx\u00b2 = mgh \u2192 h = kx\u00b2/(2mg) = 800\u00d70.0625/(2\u00d70.5\u00d710) = 5 m' },
+                { q: 'A 2 kg pendulum bob is released from a height of 0.8 m. What is its speed at the lowest point?', a: 4, unit: 'm/s', formula: 'mgh = \u00bdmv\u00b2 \u2192 v = \u221a(2gh) = \u221a(2\u00d710\u00d70.8) = 4 m/s' }
+            ];
+            this.current = 0;
+            this.score = 0;
+            return this.renderQ();
+        },
+        renderQ() {
+            const p = this.problems[this.current];
+            return `<div style="padding:12px;background:var(--card2);border-radius:10px;border:1px solid var(--bdr)">
+            <p style="font-weight:600;margin-bottom:8px">Problem ${this.current + 1}/3:</p>
+            <p style="font-size:.9rem;margin-bottom:10px">${p.q}</p>
+            <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="ch3Answer" step="0.1" style="background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:'JetBrains Mono',monospace;width:120px" placeholder="Answer">
+            <span style="color:var(--txt2)">${p.unit}</span>
+            <button class="btn btn-green btn-sm" onclick="checkCh3Answer()">Check</button>
+            </div>
+            <div id="ch3Feedback" style="margin-top:8px"></div></div>`;
+        },
+        check() { return this.current >= this.problems.length; }
+    }
+};
+
+function startChallenge(key) {
+    gameState.activeChallenge = key;
+    document.querySelectorAll('.challenge-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(key + 'Card').classList.add('active');
+    const ch = CHALLENGES[key];
+    const html = ch.setup();
+    document.getElementById('challengeArea').innerHTML = html;
+}
+
+// Ch1 toggle
+function toggleCh1Opt(btn) {
+    btn.classList.toggle('active');
+    if (btn.classList.contains('active')) {
+        btn.style.background = 'var(--cyan)';
+        btn.style.color = '#0c1222';
+        btn.style.borderColor = 'var(--cyan)';
+    } else {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--txt2)';
+        btn.style.borderColor = 'var(--bdr)';
+    }
+}
+
+function checkCh1Answer() {
+    const ch = CHALLENGES.ch1;
+    const s = ch.scenarios[ch.current];
+    const selected = Array.from(document.querySelectorAll('.ch1opt.active')).map(b => b.dataset.val);
+    const correct = s.answer.every(a => selected.includes(a)) && selected.length === s.answer.length;
+
+    const fb = document.getElementById('ch1Feedback');
+    if (correct) {
+        ch.score++;
+        fb.innerHTML = `<div style="color:var(--green)">Correct! ${s.display}</div>`;
+    } else {
+        fb.innerHTML = `<div style="color:var(--rose)">Not quite. The answer is: ${s.answer.join(', ')}. ${s.display}</div>`;
+    }
+    ch.current++;
+    if (ch.current < ch.scenarios.length) {
+        setTimeout(() => {
+            document.getElementById('challengeArea').innerHTML = ch.renderQ();
+        }, 2000);
+    } else {
+        setTimeout(() => {
+            gameState.challengeStates.ch1 = true;
+            gameState.challengesSolved = Object.values(gameState.challengeStates).filter(Boolean).length;
+            document.getElementById('ch1Card').classList.add('solved');
+            document.getElementById('ch1Card').classList.remove('active');
+            document.getElementById('challengeArea').innerHTML = `<div class="challenge-status" style="background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.3)">Challenge Complete! Score: ${ch.score}/${ch.scenarios.length}</div>`;
+            gameState.activeChallenge = null;
+            checkBadges();
+        }, 2000);
+    }
+}
+
+function checkCh2Answer() {
+    const ch = CHALLENGES.ch2;
+    const p = ch.problems[ch.current];
+    const ans = parseFloat(document.getElementById('ch2Answer').value);
+    const correct = Math.abs(ans - p.a) < 0.5;
+    const fb = document.getElementById('ch2Feedback');
+    if (correct) {
+        ch.score++;
+        fb.innerHTML = `<div style="color:var(--green)">Correct! ${p.hint}</div>`;
+    } else {
+        fb.innerHTML = `<div style="color:var(--rose)">Not quite. ${p.hint} = ${p.a} ${p.unit}</div>`;
+    }
+    ch.current++;
+    if (ch.current < ch.problems.length) {
+        setTimeout(() => { document.getElementById('challengeArea').innerHTML = ch.renderQ(); }, 2500);
+    } else {
+        setTimeout(() => {
+            gameState.challengeStates.ch2 = true;
+            gameState.challengesSolved = Object.values(gameState.challengeStates).filter(Boolean).length;
+            document.getElementById('ch2Card').classList.add('solved');
+            document.getElementById('ch2Card').classList.remove('active');
+            document.getElementById('challengeArea').innerHTML = `<div class="challenge-status" style="background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.3)">Challenge Complete! Score: ${ch.score}/${ch.problems.length}</div>`;
+            gameState.activeChallenge = null;
+            checkBadges();
+        }, 2500);
+    }
+}
+
+function checkCh3Answer() {
+    const ch = CHALLENGES.ch3;
+    const p = ch.problems[ch.current];
+    const ans = parseFloat(document.getElementById('ch3Answer').value);
+    const correct = Math.abs(ans - p.a) < 0.5;
+    const fb = document.getElementById('ch3Feedback');
+    if (correct) {
+        ch.score++;
+        fb.innerHTML = `<div style="color:var(--green)">Correct! ${p.formula}</div>`;
+    } else {
+        fb.innerHTML = `<div style="color:var(--rose)">Not quite. ${p.formula}</div>`;
+    }
+    ch.current++;
+    if (ch.current < ch.problems.length) {
+        setTimeout(() => { document.getElementById('challengeArea').innerHTML = ch.renderQ(); }, 2500);
+    } else {
+        setTimeout(() => {
+            gameState.challengeStates.ch3 = true;
+            gameState.challengesSolved = Object.values(gameState.challengeStates).filter(Boolean).length;
+            document.getElementById('ch3Card').classList.add('solved');
+            document.getElementById('ch3Card').classList.remove('active');
+            document.getElementById('challengeArea').innerHTML = `<div class="challenge-status" style="background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.3)">Challenge Complete! Score: ${ch.score}/${ch.problems.length}</div>`;
+            gameState.activeChallenge = null;
+            checkBadges();
+        }, 2500);
+    }
+}
+
+/* ====== QUIZ ====== */
+const QUIZ_ANSWERS = { q1: 'b', q2: 'c', q3: 'b', q4: 'c', q5: 'c' };
+
+function submitQuiz() {
+    let score = 0;
+    for (let i = 1; i <= 5; i++) {
+        const qEl = document.getElementById('q' + i);
+        const sel = document.querySelector(`input[name="q${i}"]:checked`);
+        const correct = QUIZ_ANSWERS['q' + i];
+        if (sel && sel.value === correct) {
+            score++;
+            qEl.classList.add('correct');
+            qEl.classList.remove('incorrect');
+        } else {
+            qEl.classList.add('incorrect');
+            qEl.classList.remove('correct');
+            // Highlight correct
+            const labels = qEl.querySelectorAll('label');
+            labels.forEach(l => {
+                const inp = l.querySelector('input');
+                if (inp.value === correct) l.style.color = 'var(--green)';
+            });
+        }
+        // Disable
+        qEl.querySelectorAll('input').forEach(inp => inp.disabled = true);
+    }
+    gameState.quizScore = score;
+    const res = document.getElementById('quizResult');
+    res.style.display = 'block';
+    if (score === 5) {
+        res.style.background = 'rgba(52,211,153,.1)';
+        res.style.color = 'var(--green)';
+        res.style.border = '1px solid rgba(52,211,153,.3)';
+        res.textContent = `Score: ${score}/5 - Perfect!`;
+    } else if (score >= 3) {
+        res.style.background = 'rgba(245,158,11,.1)';
+        res.style.color = 'var(--amber)';
+        res.style.border = '1px solid rgba(245,158,11,.3)';
+        res.textContent = `Score: ${score}/5 - Good effort!`;
+    } else {
+        res.style.background = 'rgba(251,113,133,.1)';
+        res.style.color = 'var(--rose)';
+        res.style.border = '1px solid rgba(251,113,133,.3)';
+        res.textContent = `Score: ${score}/5 - Review and try again.`;
+    }
+    checkBadges();
+}
+
+/* ====== BADGES ====== */
+function checkBadges() {
+    if (gameState.challengesSolved >= 1 && !gameState.badges.bronze) {
+        gameState.badges.bronze = true;
+        document.getElementById('badge-bronze').classList.add('earned');
+        showNotification('Badge Earned!', 'Bronze - Completed 1 challenge', 'success');
+    }
+    if (gameState.challengesSolved >= 3 && !gameState.badges.silver) {
+        gameState.badges.silver = true;
+        document.getElementById('badge-silver').classList.add('earned');
+        showNotification('Badge Earned!', 'Silver - All challenges completed', 'success');
+    }
+    if (gameState.quizScore === 5 && !gameState.badges.gold) {
+        gameState.badges.gold = true;
+        document.getElementById('badge-gold').classList.add('earned');
+        showNotification('Badge Earned!', 'Gold - Perfect quiz score!', 'success');
+    }
+    const predict = document.getElementById('predictText').value.trim();
+    const explain = document.getElementById('explainText').value.trim();
+    if (gameState.badges.silver && gameState.badges.gold && predict.length > 10 && explain.length > 10 && !gameState.badges.master) {
+        gameState.badges.master = true;
+        document.getElementById('badge-master').classList.add('earned');
+        showNotification('Badge Earned!', 'Master - All sections complete!', 'success');
+    }
+}
+
+// Check master on POE text change
+document.getElementById('predictText').addEventListener('input', checkBadges);
+document.getElementById('explainText').addEventListener('input', checkBadges);
+
+/* ====== SAVE / LOAD / RESET ====== */
+function saveState() {
+    const username = document.getElementById('username').value;
+    if (!username) { showNotification('Warning', 'Please enter a username first', 'warning'); return; }
+    const state = {
+        username,
+        displayName: document.getElementById('displayName').value,
+        predict: document.getElementById('predictText').value,
+        explain: document.getElementById('explainText').value,
+        learnt: document.getElementById('learntText').value,
+        confusing: document.getElementById('confusingText').value,
+        vocab1: document.getElementById('vocab1').value,
+        vocab2: document.getElementById('vocab2').value,
+        vocab3: document.getElementById('vocab3').value,
+        gameState,
+        dataRows: document.getElementById('dataBody').innerHTML
+    };
+    localStorage.setItem('sciSim_' + GAME_CONFIG.id + '_' + username, JSON.stringify(state));
+    showNotification('Saved!', 'Progress saved for ' + username, 'success');
+}
+
+function loadState() {
+    const username = document.getElementById('username').value;
+    if (!username) { showNotification('Warning', 'Please enter a username first', 'warning'); return; }
+    const data = localStorage.getItem('sciSim_' + GAME_CONFIG.id + '_' + username);
+    if (!data) { showNotification('Not Found', 'No saved data for ' + username, 'warning'); return; }
+    const state = JSON.parse(data);
+    document.getElementById('displayName').value = state.displayName || '';
+    document.getElementById('predictText').value = state.predict || '';
+    document.getElementById('explainText').value = state.explain || '';
+    document.getElementById('learntText').value = state.learnt || '';
+    document.getElementById('confusingText').value = state.confusing || '';
+    document.getElementById('vocab1').value = state.vocab1 || '';
+    document.getElementById('vocab2').value = state.vocab2 || '';
+    document.getElementById('vocab3').value = state.vocab3 || '';
+    if (state.dataRows) document.getElementById('dataBody').innerHTML = state.dataRows;
+    if (state.gameState) {
+        Object.assign(gameState, state.gameState);
+        // Restore badges
+        Object.keys(gameState.badges).forEach(b => {
+            if (gameState.badges[b]) document.getElementById('badge-' + b).classList.add('earned');
+        });
+        // Restore challenge cards
+        Object.keys(gameState.challengeStates).forEach(k => {
+            if (gameState.challengeStates[k]) document.getElementById(k + 'Card').classList.add('solved');
+        });
+    }
+    showNotification('Loaded!', 'Progress loaded for ' + username, 'success');
+}
+
+function resetAll() {
+    if (!confirm('Reset all progress? This cannot be undone.')) return;
+    stopSim();
+    gameState = {
+        scenario: 'drop', running: false, snapshotCount: 0,
+        challengesSolved: 0, challengeStates: { ch1: false, ch2: false, ch3: false },
+        activeChallenge: null, quizScore: -1,
+        badges: { bronze: false, silver: false, gold: false, master: false }
+    };
+    document.getElementById('predictText').value = '';
+    document.getElementById('explainText').value = '';
+    document.getElementById('learntText').value = '';
+    document.getElementById('confusingText').value = '';
+    document.getElementById('vocab1').value = '';
+    document.getElementById('vocab2').value = '';
+    document.getElementById('vocab3').value = '';
+    document.getElementById('dataBody').innerHTML = '';
+    document.getElementById('challengeArea').innerHTML = '';
+    document.getElementById('quizResult').style.display = 'none';
+    document.querySelectorAll('.badge').forEach(b => b.classList.remove('earned'));
+    document.querySelectorAll('.challenge-card').forEach(c => { c.classList.remove('solved', 'active'); });
+    document.querySelectorAll('.quiz-q').forEach(q => {
+        q.classList.remove('correct', 'incorrect');
+        q.querySelectorAll('input').forEach(i => { i.disabled = false; i.checked = false; });
+        q.querySelectorAll('label').forEach(l => l.style.color = '');
+    });
+    document.getElementById('observeText').innerHTML = 'Run a simulation below to see real-time energy data here.';
+    switchScenario('drop');
+    updateSliders();
+    showNotification('Reset', 'All progress cleared', 'info');
+}
+
+/* ====== NOTIFICATION ====== */
+function showNotification(title, message, type) {
+    const existing = document.querySelector('.notif');
+    if (existing) existing.remove();
+    const n = document.createElement('div');
+    n.className = 'notif ' + (type || 'info');
+    n.innerHTML = `<div class="ntitle">${title}</div><div class="nmsg">${message}</div>`;
+    document.body.appendChild(n);
+    setTimeout(() => { if (n.parentNode) n.remove(); }, 4000);
+}
+
+/* ====== INIT ====== */
+window.addEventListener('resize', () => {
+    resizeCanvas();
+});
+
+function init() {
+    resizeCanvas();
+    updateSliders();
+    switchScenario('drop');
+}
+
+init();
+</script>
+</body>
+</html>
