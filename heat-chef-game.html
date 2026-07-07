@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heat Chef — Restaurant of Heat Transfer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+:root{--bg:#0c1222;--card:#151d33;--card2:#1a2440;--gold:#f0b429;--cyan:#22d3ee;--rose:#fb7185;--green:#34d399;--violet:#a78bfa;--amber:#f59e0b;--txt:#e8ecf4;--txt2:#8b97b8;--muted:#5c6a8a;--bdr:#2a3654;--info:#60a5fa;--cond:#fb923c;--conv:#38bdf8;--rad:#f472b6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;padding:0 0 40px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header{background:linear-gradient(135deg,#1a1a3e,#2d1b69 40%,#0f3460);padding:20px 16px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:50}
+.hbar{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.htitle h1{font-family:'DM Serif Display',serif;font-size:1.55rem}
+.htitle .sub{color:var(--txt2);font-size:.82rem;font-weight:300}
+.scoreboard{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.scard{background:rgba(255,255,255,.06);border:1px solid var(--bdr);border-radius:12px;padding:7px 14px;text-align:center;min-width:84px}
+.scard .sv{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:600}
+.scard .sl{font-size:.64rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+.money{color:var(--gold)}.stars{color:var(--amber)}.served{color:var(--green)}
+.timer{background:rgba(255,255,255,.06);border:1px solid var(--bdr);border-radius:12px;padding:7px 14px;text-align:center;min-width:92px}
+.timer .sv{font-family:'JetBrains Mono',monospace;font-size:1.35rem;font-weight:600}
+.timer.warn .sv{color:var(--amber)}.timer.crit .sv{color:var(--rose);animation:pulse .6s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.timer .sl{font-size:.64rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+
+.legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.lchip{display:flex;align-items:center;gap:7px;font-size:.76rem;background:rgba(255,255,255,.05);padding:5px 11px;border-radius:20px;border:1px solid var(--bdr)}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.c{background:var(--cond)}.dot.v{background:var(--conv)}.dot.r{background:var(--rad)}
+
+.section{background:var(--card);border:1px solid var(--bdr);border-radius:14px;margin-top:18px;padding:20px;position:relative;overflow:hidden}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--cyan),var(--violet))}
+.section h2{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:4px}
+.section .hint{color:var(--txt2);font-size:.86rem;margin-bottom:14px;font-weight:300}
+
+/* START SCREEN */
+.startbox{text-align:center;padding:10px}
+.startbox .big{font-size:3rem}
+.startbox p{color:var(--txt2);max-width:560px;margin:10px auto;font-weight:300}
+.startbtn{background:linear-gradient(135deg,#f0b429,#e08e0b);color:#1a1200;border:none;padding:14px 34px;border-radius:12px;font-family:'Outfit';font-weight:700;font-size:1.1rem;cursor:pointer;margin-top:8px}
+.startbtn:hover{filter:brightness(1.08)}
+
+/* ORDERS */
+.orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;min-height:60px}
+.ticket{background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:14px;position:relative;transition:.18s;animation:pop .28s}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.ticket.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,180,41,.3)}
+.ticket .cust{font-size:1.8rem}
+.ticket .dish{font-weight:600;font-size:.98rem;margin-top:2px}
+.ticket .req{font-size:.76rem;color:var(--txt2);margin-top:4px}
+.ticket .pay{font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:600;margin-top:6px;font-size:.9rem}
+.ticket .cookbtn{width:100%;margin-top:10px;background:linear-gradient(135deg,#f0b429,#e08e0b);color:#1a1200;border:none;padding:8px;border-radius:9px;cursor:pointer;font-family:'Outfit';font-weight:600;font-size:.88rem}
+.ticket .cookbtn:hover{filter:brightness(1.08)}
+/* patience meter */
+.patience{height:6px;border-radius:4px;background:#0c1222;overflow:hidden;margin-top:10px;border:1px solid var(--bdr)}
+.patfill{height:100%;width:100%;transition:width .3s,background .3s}
+.ticket .leaving{position:absolute;top:10px;right:12px;font-size:.7rem;color:var(--rose)}
+
+.overlay{position:fixed;inset:0;background:rgba(6,10,20,.82);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 12px}
+.overlay.show{display:flex}
+.kitchen{background:var(--card);border:1px solid var(--bdr);border-radius:16px;max-width:720px;width:100%;padding:20px;position:relative}
+.kitchen h2{font-family:'DM Serif Display',serif;font-size:1.3rem}
+.kitchen .ktick{color:var(--txt2);font-size:.84rem;margin-bottom:6px}
+.closebtn{position:absolute;top:14px;right:14px;background:var(--card2);border:1px solid var(--bdr);color:var(--txt);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:1rem}
+.kwarn{position:absolute;top:16px;right:56px;font-size:.74rem;color:var(--amber)}
+
+.heatrow{display:flex;gap:9px;margin:10px 0 4px;flex-wrap:wrap}
+.hbtn{flex:1;min-width:120px;background:var(--card2);border:2px solid var(--bdr);border-radius:11px;padding:10px;cursor:pointer;transition:.18s;text-align:left}
+.hbtn:hover{transform:translateY(-2px)}
+.hbtn .ht{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:7px}
+.hbtn .hd{color:var(--txt2);font-size:.68rem;margin-top:3px;font-weight:300}
+.hbtn.cond.on{border-color:var(--cond);box-shadow:0 0 0 2px rgba(251,146,60,.3)}
+.hbtn.conv.on{border-color:var(--conv);box-shadow:0 0 0 2px rgba(56,189,248,.3)}
+.hbtn.rad.on{border-color:var(--rad);box-shadow:0 0 0 2px rgba(244,114,182,.3)}
+
+.stage{margin-top:10px;height:340px;border-radius:14px;position:relative;overflow:hidden;background:linear-gradient(180deg,#0f1a30,#162040 55%,#1a2850);border:1px solid var(--bdr);touch-action:none}
+.applName{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--txt2);background:rgba(0,0,0,.3);padding:3px 11px;border-radius:20px;border:1px solid var(--bdr);z-index:20}
+.dropzone{position:absolute;border:2px dashed rgba(240,180,41,.55);border-radius:14px;z-index:3;pointer-events:none;opacity:0;transition:opacity .2s}
+.dropzone.show{opacity:1}
+.dropzone .dzlab{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--gold);white-space:nowrap}
+.pan{position:absolute;left:50%;bottom:56px;transform:translateX(-50%);width:190px;height:26px;background:linear-gradient(180deg,#4a5578,#2a3350);border-radius:0 0 16px 16px;border:2px solid #5a6890;border-top:none;z-index:6}
+.panrim{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);width:194px;height:8px;background:#5a6890;border-radius:4px;z-index:6}
+.panhandle{position:absolute;right:-64px;top:5px;width:66px;height:10px;background:linear-gradient(90deg,#3a4560,#1a2030);border-radius:6px}
+.pot{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);width:180px;height:108px;z-index:6}
+.potbody{position:absolute;inset:0;background:linear-gradient(180deg,#3a4560,#2a3350);border-radius:0 0 20px 20px;border:2px solid #5a6890}
+.water{position:absolute;left:8px;right:8px;top:30px;bottom:8px;background:linear-gradient(180deg,rgba(56,189,248,.35),rgba(56,189,248,.55));border-radius:0 0 14px 14px}
+.potrim{position:absolute;left:-6px;right:-6px;top:20px;height:9px;background:#5a6890;border-radius:5px}
+.grill{position:absolute;left:50%;top:96px;transform:translateX(-50%);width:210px;height:11px;border-radius:6px;z-index:5;background:#3a3a4a;transition:.4s}
+.grill.hot{background:radial-gradient(circle,#ff6b35,#c1121f);box-shadow:0 0 26px 6px rgba(255,90,40,.6)}
+.grillbars{position:absolute;left:50%;top:122px;transform:translateX(-50%);width:210px;height:8px;background:repeating-linear-gradient(90deg,#555 0 4px,transparent 4px 14px);border-radius:4px;z-index:4}
+.flame{position:absolute;left:50%;bottom:32px;transform:translateX(-50%);z-index:5;font-size:2rem;filter:drop-shadow(0 0 12px rgba(255,120,30,.8));display:none}
+.flame.lit{display:block;animation:flick .4s infinite alternate}
+@keyframes flick{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.12) translateY(-3px)}}
+.element{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);width:170px;height:12px;border-radius:8px;z-index:2;background:#3a3a4a;transition:.4s}
+.element.hot{background:radial-gradient(circle,#ff6b35,#c1121f);box-shadow:0 0 30px 6px rgba(255,90,40,.6)}
+.food{position:absolute;width:62px;height:48px;border-radius:14px;z-index:12;display:flex;align-items:center;justify-content:center;font-size:1.7rem;cursor:grab;user-select:none;transition:background .5s,box-shadow .4s;background:transparent;touch-action:none}
+.food:active{cursor:grabbing}
+.food.dragging{z-index:30;transform:scale(1.12)}
+.foodplate{position:absolute;left:14px;bottom:12px;width:84px;height:66px;border-radius:12px;background:rgba(255,255,255,.05);border:1px dashed var(--bdr);display:flex;align-items:center;justify-content:center;z-index:8}
+.foodplate .pl{font-size:.62rem;color:var(--muted);position:absolute;bottom:4px}
+.particles{position:absolute;inset:0;pointer-events:none;z-index:5}
+.p{position:absolute;border-radius:50%}
+.wave{position:absolute;border-radius:50%;border:2px solid var(--rad)}
+.condglow{position:absolute;border-radius:14px;z-index:9;opacity:0;pointer-events:none;box-shadow:0 4px 20px 5px rgba(251,146,60,.75);width:62px;height:48px}
+.proxbar{position:absolute;right:12px;top:40px;bottom:40px;width:11px;border-radius:8px;z-index:15;background:linear-gradient(180deg,#e11d48 0%,#e11d48 22%,#34d399 22%,#34d399 55%,#60a5fa 55%,#60a5fa 100%);opacity:0;transition:opacity .3s}
+.proxbar.show{opacity:.85}
+.proxmark{position:absolute;left:-6px;width:23px;height:3px;background:#fff;border-radius:2px;transition:top .1s;box-shadow:0 0 4px #000}
+.cookpanel{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:10px}
+@media(max-width:600px){.cookpanel{grid-template-columns:1fr}}
+.meterbox{background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:12px}
+.meterbox .lab{font-size:.76rem;color:var(--txt2);margin-bottom:6px}
+.bar{height:22px;border-radius:8px;background:#0c1222;overflow:hidden;border:1px solid var(--bdr)}
+.fill{height:100%;width:0;transition:width .3s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:600;color:#0c1222}
+.tempreadout{font-family:'JetBrains Mono',monospace;font-size:1.5rem;text-align:center}
+.statechip{text-align:center;margin-top:6px;font-weight:600;padding:5px;border-radius:8px;font-size:.82rem}
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{background:var(--card2);border:1px solid var(--bdr);color:var(--txt);padding:9px 16px;border-radius:10px;cursor:pointer;font-family:'Outfit';font-weight:600;font-size:.88rem;transition:.15s}
+.btn:hover{border-color:var(--violet);transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(135deg,#f0b429,#e08e0b);color:#1a1200;border:none}
+.btn.stop{background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff;border:none}
+.btn.serve{background:linear-gradient(135deg,#34d399,#059669);color:#04231a;border:none}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.feedback{margin-top:10px;border-radius:12px;padding:11px 13px;font-size:.85rem;display:none}
+.feedback.show{display:block;animation:slideUp .3s}
+.fb-good{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.35);color:#8ef0c5}
+.fb-bad{background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.35);color:#ffb3c0}
+.fb-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#ffd98a}
+.feedback b{color:var(--txt)}
+@keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.reviewcard{text-align:center;padding:6px}
+.reviewcard .rcust{font-size:2.6rem}
+.reviewcard .rstars{font-size:1.6rem;margin:6px 0;letter-spacing:3px}
+.reviewcard .rquote{font-style:italic;color:var(--txt2);margin:4px 0 8px;font-size:.92rem}
+.reviewcard .rpay{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:600}
+.reviewcard .rpay.pos{color:var(--green)}.reviewcard .rpay.neg{color:var(--rose)}
+.reviewcard .rexplain{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:11px;font-size:.82rem;color:var(--txt2);margin:10px 0;text-align:left}
+.rev{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bdr)}
+.rev .rc{font-size:1.5rem}
+.rev .rbody .rs{font-size:.88rem}
+.rev .rbody .rq{font-size:.8rem;color:var(--txt2)}
+.notif{position:fixed;top:88px;right:20px;background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:12px 16px;z-index:300;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:280px;animation:slideInR .3s}
+.notif .nt{font-weight:700;margin-bottom:3px;font-size:.92rem}
+.notif.good{border-left:4px solid var(--green)}.notif.bad{border-left:4px solid var(--rose)}.notif.info{border-left:4px solid var(--info)}.notif.warn{border-left:4px solid var(--amber)}
+@keyframes slideInR{from{transform:translateX(340px);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{color:var(--muted);font-size:.84rem;padding:8px 0}
+
+/* END + ARTICLE */
+.endbox{text-align:center}
+.endbox .etitle{font-family:'DM Serif Display',serif;font-size:1.9rem}
+.endstats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:16px 0}
+.estat{background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:12px 20px}
+.estat .ev{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:600}
+.estat .el{font-size:.7rem;color:var(--txt2);text-transform:uppercase}
+.article label{display:block;text-align:left;font-weight:600;margin:14px 0 6px;font-size:.92rem}
+.article textarea{width:100%;background:var(--card2);border:1px solid var(--bdr);border-radius:10px;color:var(--txt);padding:12px;font-family:'Outfit';font-size:.92rem;resize:vertical;min-height:120px}
+.article .guide{font-size:.8rem;color:var(--txt2);text-align:left;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.scoreout{margin-top:16px;border-radius:12px;padding:14px;display:none}
+.scoreout.show{display:block;animation:slideUp .3s}
+.scoreout h3{font-family:'DM Serif Display',serif;margin-bottom:6px}
+.critrow{display:flex;justify-content:space-between;font-size:.86rem;padding:4px 0;border-bottom:1px solid var(--bdr)}
+.critrow .ok{color:var(--green)}.critrow .no{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="htitle">
+      <h1>🍳 Heat Chef</h1>
+      <div class="sub">5-minute rush · cook with the correct heat transfer · earn money &amp; reviews</div>
+    </div>
+    <div class="scoreboard">
+      <div class="timer" id="timerCard"><div class="sv" id="sTime">5:00</div><div class="sl">Time left</div></div>
+      <div class="scard"><div class="sv money" id="sMoney">$0</div><div class="sl">Earnings</div></div>
+      <div class="scard"><div class="sv stars" id="sStars">—</div><div class="sl">Rating</div></div>
+      <div class="scard"><div class="sv served" id="sServed">0</div><div class="sl">Served</div></div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="lchip"><span class="dot c"></span> Conduction — direct contact</div>
+    <div class="lchip"><span class="dot v"></span> Convection — moving fluid</div>
+    <div class="lchip"><span class="dot r"></span> Radiation — waves across a gap</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- START -->
+  <div class="section" id="startSection">
+    <div class="startbox">
+      <div class="big">👨‍🍳🔥</div>
+      <h2>The lunch rush is coming!</h2>
+      <p>You have <b>5 minutes</b>. Customers keep arriving — each wants a dish cooked with the correct heat transfer method. Cook it right and fast for full pay and 5-star reviews. Customers get impatient: if their patience bar runs out, they storm off and you lose the order. At the end, write a <b>Chef's Review article</b> explaining your cooking science for bonus earnings.</p>
+      <button class="startbtn" onclick="startGame()">▶ Start the rush</button>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="section" id="gameSection" style="display:none">
+    <h2>📋 Orders — cook &amp; serve fast!</h2>
+    <p class="hint">Tap a ticket to enter the kitchen. Watch the patience bars — angry customers leave!</p>
+    <div class="orders" id="orders"></div>
+  </div>
+
+  <div class="section" id="reviewSection" style="display:none">
+    <h2>⭐ Reviews</h2>
+    <div id="reviews"><div class="empty">No reviews yet.</div></div>
+  </div>
+</div>
+
+<!-- KITCHEN -->
+<div class="overlay" id="kitchenOverlay">
+  <div class="kitchen">
+    <button class="closebtn" onclick="leaveKitchen()">✕</button>
+    <div class="kwarn" id="kWarn"></div>
+    <div class="ktick" id="kOrderInfo"></div>
+    <h2 id="kTitle">Kitchen</h2>
+    <div class="heatrow">
+      <div class="hbtn cond" data-mode="conduction" onclick="pickMode('conduction')"><div class="ht"><span class="dot c"></span> Conduction</div><div class="hd">Direct contact between solids.</div></div>
+      <div class="hbtn conv" data-mode="convection" onclick="pickMode('convection')"><div class="ht"><span class="dot v"></span> Convection</div><div class="hd">Hot fluid circulates around food.</div></div>
+      <div class="hbtn rad" data-mode="radiation" onclick="pickMode('radiation')"><div class="ht"><span class="dot r"></span> Radiation</div><div class="hd">Infrared waves across a gap.</div></div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="applName" id="applName">Frying Pan</div>
+      <div class="particles" id="particles"></div>
+      <div class="dropzone" id="dropzone"><span class="dzlab" id="dzlab">Drop here</span></div>
+      <div class="pan" id="pan"><div class="panhandle"></div></div>
+      <div class="panrim" id="panrim"></div>
+      <div class="pot" id="pot" style="display:none"><div class="potbody"></div><div class="water" id="water"></div><div class="potrim"></div></div>
+      <div class="grill" id="grill" style="display:none"></div>
+      <div class="grillbars" id="grillbars" style="display:none"></div>
+      <div class="flame" id="flame">🔥</div>
+      <div class="element" id="element"></div>
+      <div class="proxbar" id="proxbar"><div class="proxmark" id="proxmark"></div></div>
+      <div class="foodplate" id="foodplate"><span class="pl">food</span></div>
+      <div class="condglow" id="condglow"></div>
+      <div class="food" id="food">🥚</div>
+    </div>
+    <div class="cookpanel">
+      <div class="meterbox"><div class="lab">Cooked level</div><div class="bar"><div class="fill" id="cookFill" style="background:var(--green)">0%</div></div><div class="statechip" id="stateChip" style="background:rgba(92,106,138,.2);color:var(--txt2)">Raw</div></div>
+      <div class="meterbox"><div class="lab">Food temperature</div><div class="tempreadout" id="tempRead">25°C</div></div>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="heatBtn" onclick="toggleHeat()">🔥 Turn on heat</button>
+      <button class="btn" onclick="resetCook()">↺ Reset</button>
+      <button class="btn serve" id="serveBtn" onclick="serveDish()" disabled>🍽️ Serve</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</div>
+
+<!-- REVIEW RESULT -->
+<div class="overlay" id="reviewOverlay">
+  <div class="kitchen" style="max-width:420px">
+    <div class="reviewcard">
+      <div class="rcust" id="rvCust">🙂</div>
+      <div class="rstars" id="rvStars">★★★★★</div>
+      <div class="rquote" id="rvQuote">"Delicious!"</div>
+      <div class="rpay pos" id="rvPay">+$12</div>
+      <div class="rexplain" id="rvExplain"></div>
+      <button class="btn primary" style="width:100%" onclick="closeReview()">Back to the rush →</button>
+    </div>
+  </div>
+</div>
+
+<!-- END / ARTICLE -->
+<div class="overlay" id="endOverlay">
+  <div class="kitchen" style="max-width:620px">
+    <div class="endbox">
+      <div class="etitle">⏰ Service over!</div>
+      <div class="endstats">
+        <div class="estat"><div class="ev money" id="eMoney">$0</div><div class="el">Earned</div></div>
+        <div class="estat"><div class="ev stars" id="eStars">—</div><div class="el">Avg rating</div></div>
+        <div class="estat"><div class="ev served" id="eServed">0</div><div class="el">Served</div></div>
+      </div>
+    </div>
+    <div class="article">
+      <h3 style="font-family:'DM Serif Display',serif">✍️ Write your Chef's Review (bonus pay!)</h3>
+      <div class="guide">Food critics pay for a good writeup. Earn up to <b>$40 bonus</b> by explaining the science. Try to mention: <b>conduction</b>, <b>convection</b>, <b>radiation</b>, the words <b>contact</b>, <b>fluid/current</b>, and <b>infrared</b>, and why <b>distance</b> mattered for the fire dishes.</div>
+      <label for="articleText">Explain how you cooked your dishes and why each heat method worked:</label>
+      <textarea id="articleText" placeholder="e.g. For the fried egg I used conduction because the egg was in direct contact with the hot metal pan, so heat passed straight from the fast-vibrating metal particles into the egg. For the boiled potato I chose convection — the hot water rose and cooler water sank, creating currents that carried heat all around it. For the sausage over the fire I used radiation: infrared waves crossed the gap, so I had to hold it at the right distance — too close and it burned, too far and it stayed raw..."></textarea>
+      <button class="btn primary" style="width:100%;margin-top:10px" onclick="scoreArticle()">📝 Submit article for scoring</button>
+      <div class="scoreout" id="scoreOut"></div>
+      <button class="btn" style="width:100%;margin-top:10px" onclick="location.reload()">↺ Play again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATIONS={
+  pan:{name:'Frying Pan',icon:'🍳',food:'🥚',cooked:'🍳',correct:'conduction',place:'contact',dish:'Fried Egg',hint:'Drag the egg onto the pan surface — it must TOUCH the metal.'},
+  griddle:{name:'Hot Griddle',icon:'🥞',food:'🥞',cooked:'🧇',correct:'conduction',place:'contact',dish:'Pancakes',hint:'Drag the batter onto the hot plate so it touches directly.'},
+  boil:{name:'Boiling Pot',icon:'🍲',food:'🥔',cooked:'🥘',correct:'convection',place:'submerge',dish:'Boiled Potato',hint:'Drag the potato INTO the water so hot currents surround it.'},
+  oven:{name:'Fan Oven',icon:'🌀',food:'🧁',cooked:'🍰',correct:'convection',place:'submerge',dish:'Baked Cake',hint:'Drag the cake inside the oven so hot air circulates around it.'},
+  fire:{name:'Open Fire',icon:'🏕️',food:'🌭',cooked:'🌭',correct:'radiation',place:'gap',dish:'Grilled Sausage',hint:'Hold the sausage NEAR the flame — too far = raw, too near = burnt.'},
+  grill:{name:'Grill',icon:'🔥',food:'🍞',cooked:'🍖',correct:'radiation',place:'gap',dish:'Toasted Bread',hint:'Position bread below the element — close enough for infrared, not touching.'}
+};
+const CUSTOMERS=['😀','🧑','👩','🧔','👧','👵','🧓','👨‍🦱','👩‍🦰','🧑‍🦳','😋','🤗'];
+const BASE_PAY={pan:10,griddle:12,boil:11,oven:16,fire:14,grill:9};
+const GAME_SECONDS=300, SPAWN_MS=7000, PATIENCE_MS=26000, MAX_ORDERS=6;
+
+let game={money:0,ratings:[],served:0,lost:0,orders:[],reviews:[],activeOrder:null,orderSeq:0,
+          running:false,timeLeft:GAME_SECONDS,tickTimer:null,spawnTimer:null,patTimer:null};
+let cook={key:'pan',mode:null,heatOn:false,cook:0,temp:25,timer:null,placedOK:false,burn:0,quality:null};
+
+/* ---------- game control ---------- */
+function startGame(){
+  document.getElementById('startSection').style.display='none';
+  document.getElementById('gameSection').style.display='';
+  document.getElementById('reviewSection').style.display='';
+  game.running=true;game.timeLeft=GAME_SECONDS;
+  spawnOrder();spawnOrder();
+  game.tickTimer=setInterval(gameTick,1000);
+  game.spawnTimer=setInterval(()=>{if(game.orders.filter(o=>!o.done).length<MAX_ORDERS)spawnOrder();},SPAWN_MS);
+  game.patTimer=setInterval(patienceTick,250);
+}
+function gameTick(){
+  game.timeLeft--;
+  const m=Math.floor(game.timeLeft/60),s=game.timeLeft%60;
+  document.getElementById('sTime').textContent=m+':'+(s<10?'0':'')+s;
+  const tc=document.getElementById('timerCard');
+  tc.classList.toggle('warn',game.timeLeft<=60&&game.timeLeft>20);
+  tc.classList.toggle('crit',game.timeLeft<=20);
+  if(game.timeLeft<=0)endGame();
+}
+function endGame(){
+  game.running=false;
+  clearInterval(game.tickTimer);clearInterval(game.spawnTimer);clearInterval(game.patTimer);
+  leaveKitchen();
+  document.getElementById('reviewOverlay').classList.remove('show');
+  document.getElementById('eMoney').textContent='$'+game.money;
+  const avg=game.ratings.length?(game.ratings.reduce((a,b)=>a+b,0)/game.ratings.length):0;
+  document.getElementById('eStars').textContent=avg?avg.toFixed(1)+'★':'—';
+  document.getElementById('eServed').textContent=game.served;
+  document.getElementById('endOverlay').classList.add('show');
+}
+
+/* ---------- orders + patience ---------- */
+function spawnOrder(){
+  if(!game.running)return;
+  const keys=Object.keys(STATIONS),k=keys[Math.floor(Math.random()*keys.length)],s=STATIONS[k];
+  game.orders.push({id:++game.orderSeq,key:k,cust:CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)],
+    dish:s.dish,icon:s.icon,pay:BASE_PAY[k],method:s.correct,done:false,result:null,
+    born:Date.now(),patience:PATIENCE_MS});
+  renderOrders();
+}
+function patienceTick(){
+  const now=Date.now();let changed=false;
+  game.orders.forEach(o=>{
+    if(o.done||o===game.activeOrder)return;
+    o.patience=PATIENCE_MS-(now-o.born);
+    if(o.patience<=0){o.done=true;o.walkedOut=true;game.lost++;game.ratings.push(1);
+      game.reviews.unshift({cust:o.cust,stars:1,pay:0,quote:'Waited too long and left angry — never served!'});
+      changed=true;notify('Customer left! 😠',o.dish+' order lost — too slow.','bad');}
+  });
+  updatePatienceBars();
+  if(changed){renderOrders();renderReviews();updateScore();}
+}
+function updatePatienceBars(){
+  game.orders.forEach(o=>{
+    if(o.done)return;
+    const el=document.getElementById('pat-'+o.id);if(!el)return;
+    const frac=Math.max(0,o.patience/PATIENCE_MS);
+    el.style.width=(frac*100)+'%';
+    el.style.background=frac>.5?'var(--green)':frac>.25?'var(--amber)':'var(--rose)';
+  });
+}
+function renderOrders(){
+  const box=document.getElementById('orders');
+  const live=game.orders.filter(o=>!o.done);
+  box.innerHTML='';
+  if(!live.length){box.innerHTML='<div class="empty">Waiting for customers…</div>';return;}
+  live.forEach(o=>{
+    const d=document.createElement('div');d.className='ticket';
+    d.innerHTML='<div class="cust">'+o.cust+'</div>'+
+      '<div class="dish">'+o.icon+' '+o.dish+'</div>'+
+      '<div class="req">Cook it the right way!</div>'+
+      '<div class="pay">Up to $'+o.pay+'</div>'+
+      '<div class="patience"><div class="patfill" id="pat-'+o.id+'"></div></div>'+
+      '<button class="cookbtn">👨‍🍳 Enter Kitchen</button>';
+    d.querySelector('.cookbtn').onclick=()=>enterKitchen(o.id);
+    box.appendChild(d);
+  });
+  updatePatienceBars();
+}
+function updateScore(){
+  document.getElementById('sMoney').textContent='$'+game.money;
+  document.getElementById('sServed').textContent=game.served;
+  const avg=game.ratings.length?(game.ratings.reduce((a,b)=>a+b,0)/game.ratings.length):null;
+  document.getElementById('sStars').textContent=avg?avg.toFixed(1)+'★':'—';
+}
+
+/* ---------- kitchen ---------- */
+const stage=document.getElementById('stage'),food=document.getElementById('food');
+function enterKitchen(orderId){
+  game.activeOrder=game.orders.find(o=>o.id===orderId);
+  cook.key=game.activeOrder.key;cook.mode=null;cook.quality=null;
+  document.querySelectorAll('.hbtn').forEach(b=>b.classList.remove('on'));
+  const s=STATIONS[cook.key];
+  document.getElementById('kTitle').textContent=s.icon+' '+s.name;
+  document.getElementById('kOrderInfo').textContent='Order #'+game.activeOrder.id+' — '+game.activeOrder.cust+' wants '+s.dish;
+  document.getElementById('applName').textContent=s.name;
+  document.getElementById('kWarn').textContent='⏱ customer still waiting…';
+  show('pan',cook.key==='pan');show('panrim',cook.key==='pan');
+  show('pot',cook.key==='boil');
+  show('grill',cook.key==='grill');show('grillbars',cook.key==='grill');
+  show('flame',cook.key==='fire');
+  show('element',cook.key==='pan'||cook.key==='griddle'||cook.key==='boil');
+  drawOvenBox(cook.key==='oven');
+  document.getElementById('proxbar').classList.toggle('show',s.place==='gap');
+  resetCook(true);
+  document.getElementById('serveBtn').disabled=true;
+  document.getElementById('kitchenOverlay').classList.add('show');
+}
+function leaveKitchen(){stopHeatSilent();document.getElementById('kitchenOverlay').classList.remove('show');}
+function show(id,on){const e=document.getElementById(id);if(e)e.style.display=on?'':'none';}
+function drawOvenBox(on){let box=document.getElementById('ovenbox');if(on){if(!box){box=document.createElement('div');box.id='ovenbox';box.style.cssText='position:absolute;left:50%;top:48px;transform:translateX(-50%);width:220px;height:190px;border:3px solid #5a6890;border-radius:14px;background:linear-gradient(180deg,rgba(40,50,80,.5),rgba(30,40,64,.6));z-index:4';stage.appendChild(box);}}else if(box){box.remove();}}
+function pickMode(m){cook.mode=m;document.querySelectorAll('.hbtn').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));if(cook.heatOn)stopHeat();}
+function restFood(){food.textContent=STATIONS[cook.key].food;food.style.left='20px';food.style.bottom='16px';food.style.background='transparent';food.style.boxShadow='none';document.getElementById('foodplate').style.display='';checkPlacement();}
+
+let drag={on:false,dx:0,dy:0};
+function startDrag(e){drag.on=true;food.classList.add('dragging');document.getElementById('foodplate').style.display='none';showDropzone(true);const r=food.getBoundingClientRect();const p=point(e);drag.dx=p.x-r.left;drag.dy=p.y-r.top;e.preventDefault();}
+function moveDrag(e){if(!drag.on)return;const sr=stage.getBoundingClientRect();const p=point(e);let x=p.x-sr.left-drag.dx,y=p.y-sr.top-drag.dy;x=Math.max(0,Math.min(sr.width-food.offsetWidth,x));y=Math.max(0,Math.min(sr.height-food.offsetHeight,y));food.style.left=x+'px';food.style.bottom=(sr.height-y-food.offsetHeight)+'px';checkPlacement();e.preventDefault();}
+function endDrag(){if(!drag.on)return;drag.on=false;food.classList.remove('dragging');showDropzone(false);checkPlacement();}
+function point(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY};}
+food.addEventListener('mousedown',startDrag);window.addEventListener('mousemove',moveDrag);window.addEventListener('mouseup',endDrag);
+food.addEventListener('touchstart',startDrag,{passive:false});window.addEventListener('touchmove',moveDrag,{passive:false});window.addEventListener('touchend',endDrag);
+function foodCenter(){const sr=stage.getBoundingClientRect(),fr=food.getBoundingClientRect();return{x:fr.left-sr.left+fr.width/2,y:fr.top-sr.top+fr.height/2};}
+function elBox(id){const sr=stage.getBoundingClientRect(),e=document.getElementById(id);if(!e||e.style.display==='none')return null;const r=e.getBoundingClientRect();return{cx:r.left-sr.left+r.width/2,cy:r.top-sr.top+r.height/2,left:r.left-sr.left,right:r.right-sr.left,top:r.top-sr.top,bottom:r.bottom-sr.top};}
+function showDropzone(on){const dz=document.getElementById('dropzone'),s=STATIONS[cook.key];if(!on){dz.classList.remove('show');return;}dz.classList.add('show');let ref,lab;if(s.place==='contact'){ref=elBox(cook.key==='griddle'?'element':'pan');lab='Place food ON the surface';}else if(s.place==='submerge'){ref=elBox(cook.key==='boil'?'water':'ovenbox');lab='Place food INSIDE';}else{ref=elBox(cook.key==='fire'?'flame':'grill');lab='Hold near — not too far, not touching';}if(!ref)return;document.getElementById('dzlab').textContent=lab;if(s.place==='gap'){dz.style.left=(ref.cx-70)+'px';dz.style.width='140px';dz.style.top=(ref.cy-140)+'px';dz.style.height='115px';}else{dz.style.left=(ref.left-6)+'px';dz.style.width=(ref.right-ref.left+12)+'px';dz.style.top=(ref.top-6)+'px';dz.style.height=(ref.bottom-ref.top+12)+'px';}}
+let proxZone='none';
+function checkPlacement(){
+  const s=STATIONS[cook.key],fc=foodCenter();let ok=false;proxZone='none';
+  if(s.place==='contact'){const b=elBox(cook.key==='griddle'?'element':'pan');if(b)ok=fc.x>b.left-10&&fc.x<b.right+10&&fc.y<b.bottom+20&&fc.y>b.top-36;}
+  else if(s.place==='submerge'){const b=elBox(cook.key==='boil'?'water':'ovenbox');if(b)ok=fc.x>b.left&&fc.x<b.right&&fc.y>b.top&&fc.y<b.bottom;}
+  else{const b=elBox(cook.key==='fire'?'flame':'grill');if(b){const dist=Math.hypot(fc.x-b.cx,fc.y-b.cy);if(dist<44)proxZone='touch';else if(dist<115){proxZone='good';ok=true;}else if(dist<195)proxZone='near-far';else proxZone='far';updateProx(dist);}}
+  cook.placedOK=ok;return ok;
+}
+function updateProx(dist){const mark=document.getElementById('proxmark');const t=Math.max(0,Math.min(1,(dist-40)/180));mark.style.top=(t*100)+'%';}
+
+function toggleHeat(){cook.heatOn?stopHeat():startHeat();}
+function startHeat(){
+  if(!cook.mode){notify('Choose a heat method','Pick conduction, convection or radiation.','info');return;}
+  if(!checkPlacement()){notify('Place the food first','Drag it into the correct spot.','warn');flashFeedback('warn','⚠️ <b>The food isn\'t in position.</b> '+STATIONS[cook.key].hint);return;}
+  cook.heatOn=true;const btn=document.getElementById('heatBtn');btn.textContent='⏹ Stop';btn.classList.remove('primary');btn.classList.add('stop');
+  document.getElementById('element').classList.add('hot');document.getElementById('grill').classList.add('hot');document.getElementById('flame').classList.add('lit');
+  spawnVisual();clearInterval(cook.timer);const cm=(cook.mode===STATIONS[cook.key].correct);cook.timer=setInterval(()=>tick(cm),110);
+}
+function stopHeat(){cook.heatOn=false;clearInterval(cook.timer);const btn=document.getElementById('heatBtn');btn.textContent='🔥 Turn on heat';btn.classList.add('primary');btn.classList.remove('stop');document.getElementById('element').classList.remove('hot');document.getElementById('grill').classList.remove('hot');document.getElementById('flame').classList.remove('lit');clearVisual();evaluate();}
+function tick(cm){
+  const s=STATIONS[cook.key];if(s.place==='gap')checkPlacement();
+  let heatRate,cookRate,burnRate=0;
+  if(!cm){heatRate=0.25;cookRate=0;}
+  else if(s.place==='gap'){if(proxZone==='good'){heatRate=1.5;cookRate=1.25;}else if(proxZone==='touch'){heatRate=2.8;cookRate=1.8;burnRate=2.4;}else if(proxZone==='near-far'){heatRate=.5;cookRate=.3;}else{heatRate=.15;cookRate=0;}}
+  else{heatRate=1.7;cookRate=1.35;}
+  const maxT=!cm?48:(proxZone==='touch'?260:200);
+  cook.temp=Math.min(maxT,cook.temp+heatRate*(1-cook.temp/(maxT+10)));
+  cook.cook=Math.min(100,cook.cook+cookRate);cook.burn=Math.min(120,cook.burn+burnRate);
+  render();
+  if(cook.cook>=100&&cook.burn<40){stopHeat();}
+  else if(cook.burn>=100){stopHeat();}
+}
+function render(){
+  const c=Math.round(cook.cook),fill=document.getElementById('cookFill');
+  fill.style.width=Math.max(4,c)+'%';fill.textContent=c+'%';
+  document.getElementById('tempRead').textContent=Math.round(cook.temp)+'°C';
+  const chip=document.getElementById('stateChip');let label,bg,col,fc;
+  if(cook.burn>=60){label='Burning! 🔥';bg='rgba(225,29,72,.2)';col='#ff8fa3';fc='#e11d48';}
+  else if(c<15){label='Raw';bg='rgba(92,106,138,.2)';col='var(--txt2)';fc='#5c6a8a';}
+  else if(c<55){label='Warming up';bg='rgba(96,165,250,.15)';col='var(--info)';fc='var(--info)';}
+  else if(c<100){label='Cooking';bg='rgba(245,158,11,.15)';col='var(--amber)';fc='var(--amber)';}
+  else{label='Perfectly cooked ✔';bg='rgba(52,211,153,.15)';col='var(--green)';fc='var(--green)';}
+  chip.textContent=label;chip.style.background=bg;chip.style.color=col;fill.style.background=fc;
+  const t=Math.min(1,c/100),bt=Math.min(1,cook.burn/100);
+  let r=233-90*t,g=211-120*t,b=160-130*t;r=r*(1-bt)+30*bt;g=g*(1-bt)+20*bt;b=b*(1-bt)+18*bt;
+  const onFood=STATIONS[cook.key].place!=='submerge';
+  food.style.background=((t>0.05||bt>0.05)&&onFood)?'rgb('+(r|0)+','+(g|0)+','+(b|0)+')':'transparent';
+}
+function evaluate(){
+  const s=STATIONS[cook.key];const wrongMethod=(cook.mode!==s.correct);const serveBtn=document.getElementById('serveBtn');let q;
+  if(cook.burn>=100){food.textContent='🔥';q={stars:1,tag:'burnt',fbkind:'bad',fb:'🔥 <b>Burnt!</b> Held too close — infrared intensity rises sharply as distance shrinks. You can serve it, but expect a bad review.'};}
+  else if(wrongMethod&&cook.cook<40){q={stars:1,tag:'raw-wrong',fbkind:'bad',fb:'⚠️ <b>Barely warm — wrong method.</b> You used <b>'+cap(cook.mode)+'</b>, but this cooks by <b>'+cap(s.correct)+'</b>. '+whyWrong(cook.mode)+'</br>Serving earns a bad review.'};}
+  else if(cook.cook>=100){q={stars:5,tag:'perfect',fbkind:'good',fb:'✅ <b>Perfect via '+cap(s.correct)+'!</b> '+explainWhy(s.correct,s)+' Serve for a great review!'};}
+  else if(cook.cook>=55){q={stars:3,tag:'under',fbkind:'warn',fb:'🟡 <b>Undercooked.</b> Keep heating to 100% for full marks. Serving now = average review.'};}
+  else{q={stars:2,tag:'raw',fbkind:'warn',fb:'🟡 <b>Still mostly raw.</b> Cook it more before serving.'};}
+  cook.quality=q;flashFeedback(q.fbkind,q.fb);serveBtn.disabled=(cook.cook<8&&cook.burn<40);
+}
+function serveDish(){
+  if(!cook.quality)evaluate();
+  const o=game.activeOrder,s=STATIONS[cook.key],q=cook.quality||{stars:1,tag:'raw'};
+  o.done=true;
+  const payMap={5:o.pay,4:Math.round(o.pay*.8),3:Math.round(o.pay*.5),2:Math.round(o.pay*.2),1:0};
+  let pay=payMap[q.stars];
+  if(q.tag==='burnt'||q.tag==='raw-wrong')pay=-Math.round(o.pay*.3);
+  game.money+=pay;game.served++;game.ratings.push(q.stars);
+  const quote=reviewQuote(q.tag,s);
+  o.result={stars:q.stars,pay:pay,quote:quote,cust:o.cust};
+  game.reviews.unshift(o.result);
+  updateScore();renderOrders();renderReviews();
+  document.getElementById('rvCust').textContent=o.cust;
+  document.getElementById('rvStars').textContent='★★★★★☆☆☆☆☆'.slice(5-q.stars,10-q.stars);
+  document.getElementById('rvStars').style.color=q.stars>=4?'var(--green)':q.stars===3?'var(--amber)':'var(--rose)';
+  document.getElementById('rvQuote').textContent='“'+quote+'”';
+  const payEl=document.getElementById('rvPay');payEl.textContent=(pay>=0?'+$':'-$')+Math.abs(pay);payEl.className='rpay '+(pay>=0?'pos':'neg');
+  document.getElementById('rvExplain').innerHTML='<b>Physics:</b> '+(q.tag==='perfect'?explainWhy(s.correct,s):q.tag==='burnt'?'Radiation intensity increases sharply the closer the food is to the source, so it overcooked.':q.tag==='raw-wrong'?whyWrong(cook.mode):'The food didn\'t reach a fully-cooked state before serving.');
+  leaveKitchen();
+  if(game.running)document.getElementById('reviewOverlay').classList.add('show');
+}
+function closeReview(){document.getElementById('reviewOverlay').classList.remove('show');game.activeOrder=null;}
+function reviewQuote(tag,s){
+  const q={
+    perfect:['Cooked to perfection! '+cap(s.correct)+' done right.','Best '+s.dish.toLowerCase()+' in town!','Absolutely delicious!'],
+    under:['A bit undercooked, but okay.','Could\'ve cooked it longer.','Not quite done inside.'],
+    raw:['This is basically raw!','Cold in the middle!','Barely cooked.'],
+    'raw-wrong':['Cold and raw — wrong cooking method!','You didn\'t use the right heat!','This wasn\'t cooked properly.'],
+    burnt:['Burnt to charcoal!','Overcooked, inedible!','Way too close to the heat!']
+  }[tag];
+  return q[Math.floor(Math.random()*q.length)];
+}
+function renderReviews(){
+  const box=document.getElementById('reviews');
+  if(!game.reviews.length){box.innerHTML='<div class="empty">No reviews yet.</div>';return;}
+  box.innerHTML='';
+  game.reviews.slice(0,8).forEach(r=>{
+    const stars='★★★★★☆☆☆☆☆'.slice(5-r.stars,10-r.stars);
+    const col=r.stars>=4?'var(--green)':r.stars===3?'var(--amber)':'var(--rose)';
+    const d=document.createElement('div');d.className='rev';
+    d.innerHTML='<div class="rc">'+r.cust+'</div><div class="rbody"><div class="rs" style="color:'+col+'">'+stars+'  <span style="color:'+(r.pay>=0?'var(--gold)':'var(--rose)')+'">'+(r.pay>=0?'+$':'-$')+Math.abs(r.pay)+'</span></div><div class="rq">'+r.quote+'</div></div>';
+    box.appendChild(d);
+  });
+}
+function explainWhy(m,s){return{conduction:'The food sat directly on the hot metal, so heat conducted from the fast-vibrating metal particles into the food through contact.',convection:'Hot '+(cook.key==='oven'?'air':'water')+' rose while cooler fluid sank, forming a convection current that carried heat all around the food.',radiation:'At the right distance the food absorbed infrared radiation across the gap — no contact needed.'}[m];}
+function whyWrong(m){return{conduction:'Nothing was touching the food, so conduction couldn\'t carry enough heat.',convection:'There was no moving fluid around it, so convection currents couldn\'t form.',radiation:'Too little heat travelled as infrared across a gap here.'}[m];}
+function flashFeedback(kind,html){const fb=document.getElementById('feedback');fb.className='feedback show '+(kind==='good'?'fb-good':kind==='bad'?'fb-bad':'fb-warn');fb.innerHTML=html;}
+
+/* ---------- ARTICLE SCORING ---------- */
+function scoreArticle(){
+  const text=(document.getElementById('articleText').value||'').toLowerCase();
+  const words=text.trim().split(/\s+/).filter(Boolean).length;
+  const crit=[
+    {label:'Mentions conduction',hit:/conduction|conduct/.test(text)},
+    {label:'Mentions convection',hit:/convection|convect/.test(text)},
+    {label:'Mentions radiation',hit:/radiation|radiat|infrared/.test(text)},
+    {label:'Explains contact (conduction)',hit:/contact|touch|directly/.test(text)},
+    {label:'Explains fluid/current (convection)',hit:/current|fluid|rise|rises|circulat|water|air/.test(text)},
+    {label:'Explains infrared/distance (radiation)',hit:/infrared|distance|gap|too close|too far|near/.test(text)},
+    {label:'Enough detail (40+ words)',hit:words>=40}
+  ];
+  const hits=crit.filter(c=>c.hit).length;
+  const bonus=Math.round((hits/crit.length)*40); // up to $40
+  game.money+=bonus;
+  const rows=crit.map(c=>'<div class="critrow"><span>'+c.label+'</span><span class="'+(c.hit?'ok':'no')+'">'+(c.hit?'✓ +':'—')+'</span></div>').join('');
+  const out=document.getElementById('scoreOut');
+  out.className='scoreout show '+(bonus>=28?'fb-good':bonus>=16?'fb-warn':'fb-bad');
+  out.innerHTML='<h3>📰 Critic\'s verdict: +$'+bonus+' bonus</h3>'+
+    '<div style="font-size:.82rem;color:var(--txt2);margin-bottom:6px">Word count: '+words+' · '+hits+'/'+crit.length+' science points covered</div>'+
+    rows+
+    '<div style="margin-top:10px;font-family:JetBrains Mono,monospace;font-size:1.1rem">Final total: <span style="color:var(--gold)">$'+game.money+'</span></div>';
+  document.getElementById('eMoney').textContent='$'+game.money;
+}
+
+/* visuals */
+function spawnVisual(){
+  clearVisual();const box=document.getElementById('particles'),m=cook.mode;
+  if(m==='conduction'){const g=document.getElementById('condglow'),fr=food.getBoundingClientRect(),sr=stage.getBoundingClientRect();g.style.left=(fr.left-sr.left)+'px';g.style.bottom=(sr.height-(fr.bottom-sr.top))+'px';g.style.transition='opacity .5s';g.style.opacity='.85';}
+  if(m==='convection'){const ref=elBox(cook.key==='boil'?'water':'ovenbox');box._iv=setInterval(()=>{for(let i=0;i<2;i++){const p=document.createElement('div');p.className='p';const sz=6+Math.random()*8;p.style.width=p.style.height=sz+'px';p.style.background='rgba(56,189,248,.7)';const cx=ref?ref.left+Math.random()*(ref.right-ref.left):stage.offsetWidth/2;p.style.left=cx+'px';p.style.bottom=(stage.offsetHeight-(ref?ref.bottom:200))+'px';box.appendChild(p);p.animate([{transform:'translateY(0)',opacity:.8},{transform:'translateY(-'+(80+Math.random()*60)+'px) translateX('+(Math.random()*40-20)+'px)',opacity:0}],{duration:1500+Math.random()*600,easing:'ease-out'}).onfinish=()=>p.remove();}},200);}
+  if(m==='radiation'){const ref=elBox(cook.key==='fire'?'flame':'grill');box._iv=setInterval(()=>{const w=document.createElement('div');w.className='wave';const cx=ref?ref.cx:stage.offsetWidth/2,cy=ref?ref.cy:130;w.style.left=(cx-10)+'px';w.style.top=(cy-10)+'px';w.style.width=w.style.height='20px';w.style.opacity='.7';box.appendChild(w);w.animate([{width:'20px',height:'20px',opacity:.7,marginLeft:'0',marginTop:'0'},{width:'150px',height:'150px',opacity:0,marginLeft:'-65px',marginTop:'-65px'}],{duration:1400,easing:'ease-out'}).onfinish=()=>w.remove();},430);}
+}
+function clearVisual(){const box=document.getElementById('particles');if(box._iv){clearInterval(box._iv);box._iv=null;}box.innerHTML='';document.getElementById('condglow').style.opacity='0';}
+function resetCook(keepFeedback){stopHeatSilent();cook.cook=0;cook.temp=25;cook.burn=0;cook.quality=null;render();if(!keepFeedback){document.getElementById('feedback').className='feedback';}document.getElementById('serveBtn').disabled=true;restFood();}
+function stopHeatSilent(){cook.heatOn=false;clearInterval(cook.timer);const btn=document.getElementById('heatBtn');if(btn){btn.textContent='🔥 Turn on heat';btn.classList.add('primary');btn.classList.remove('stop');}document.getElementById('element').classList.remove('hot');document.getElementById('grill').classList.remove('hot');document.getElementById('flame').classList.remove('lit');clearVisual();}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function notify(t,m,type){const ex=document.querySelector('.notif');if(ex)ex.remove();const n=document.createElement('div');n.className='notif '+type;n.innerHTML='<div class="nt">'+t+'</div><div style="font-size:.82rem;color:var(--txt2)">'+m+'</div>';document.body.appendChild(n);setTimeout(()=>n.remove(),3200);}
+render();
+</script>
+</body>
+</html>
