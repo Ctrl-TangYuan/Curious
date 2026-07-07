@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Laser Lab</title>
+<style>
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% -10%, #16283f, #060b12 55%);
+    display: flex; justify-content: center;
+    padding: 26px 14px;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    color: #dbe7f0; touch-action: none;
+  }
+  .shell { width: 100%; max-width: 580px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; }
+  .title { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 3px; font-family: monospace; }
+  .accent { color: #4dd4ff; }
+  .tag { margin: 6px 0 0; font-size: 13px; color: #7f98ac; max-width: 320px; }
+  .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .stepBox { display: flex; align-items: baseline; gap: 6px; }
+  .stepNum { font-family: monospace; font-size: 30px; color: #4dd4ff; font-weight: 700; line-height: 1; }
+  .stepLbl { font-size: 12px; color: #7f98ac; text-transform: uppercase; letter-spacing: 1px; }
+  .parBox { font-size: 11px; color: #8aa0b3; border: 1px solid #26384d; border-radius: 999px; padding: 3px 10px; text-transform: uppercase; letter-spacing: 1.5px; }
+  .levelStrip { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .levelChip { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #26384d; background: #0e1c2b; color: #8aa0b3; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .levelChip.active { background: #12324a; color: #eaf6ff; }
+  .levelChip.done { border-color: #3f7d5c; }
+  .boardOuter { position: relative; background: #08111c; padding: 12px; border-radius: 16px; border: 1px solid #1b2c40; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+  .board { display: grid; gap: 3px; aspect-ratio: 1 / 1; border-radius: 6px; }
+  .cell { position: relative; border-radius: 4px; display: flex; align-items: center; justify-content: center; user-select: none; transition: box-shadow .1s; }
+  .beamSvg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .wall { width: 80%; height: 80%; background: repeating-linear-gradient(45deg,#33475e,#33475e 4px,#2a3c52 4px,#2a3c52 8px); border-radius: 3px; border: 1px solid #45607a; }
+  .source { border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; width: 62%; height: 62%; }
+  .target { border-radius: 50%; border: 3px solid; display: flex; align-items: center; justify-content: center; z-index: 2; transition: all .15s; width: 60%; height: 60%; }
+  .targetCore { width: 34%; height: 34%; border-radius: 50%; }
+  .pieceWrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; touch-action: none; }
+  .floating { position: fixed; transform: translate(-50%, -50%); z-index: 50; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .solvedTag { position: absolute; inset: 0; background: rgba(6,12,20,.8); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; animation: fadeUp .3s ease; }
+  .solvedText { font-size: 38px; font-weight: 800; letter-spacing: 6px; color: #7cff6b; text-shadow: 0 0 24px #7cff6b88; }
+  .solvedSub { font-size: 14px; color: #aec4d6; }
+  .nextBtn { margin-top: 8px; background: #7cff6b; color: #06120a; border: none; padding: 12px 26px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; }
+  .controls { display: flex; gap: 10px; margin-top: 16px; }
+  .ctrlBtn { flex: 1; background: #11202f; border: 1px solid #274058; color: #aec4d6; padding: 11px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; justify-content: center; }
+  .legItem { display: flex; align-items: center; gap: 8px; }
+  .legLabel { font-size: 12px; color: #7f98ac; }
+  .legMirror { width: 20px; height: 4px; background: linear-gradient(90deg,#eaf6ff,#9cc3dd); border-radius: 3px; transform: rotate(-30deg); }
+  .legSplit { width: 20px; height: 4px; background: repeating-linear-gradient(90deg,#ffd24d,#ffd24d 3px,#0a1420 3px,#0a1420 6px); border-radius: 3px; transform: rotate(-30deg); }
+  .legWall { width: 14px; height: 14px; background: #33475e; border: 1px solid #45607a; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="head">
+    <div>
+      <h1 class="title">LASER<span class="accent">LAB</span></h1>
+      <p class="tag">Drag to move a mirror. Tap it to spin. Route every beam home.</p>
+    </div>
+    <div class="meta">
+      <div class="stepBox"><span class="stepNum" id="stepNum">0</span><span class="stepLbl">steps</span></div>
+      <div class="parBox" id="parBox">Tutorial</div>
+    </div>
+  </div>
+  <div class="levelStrip" id="levelStrip"></div>
+  <div class="boardOuter">
+    <div class="board" id="board"></div>
+    <div id="floating"></div>
+    <div id="solvedTag"></div>
+  </div>
+  <div class="controls">
+    <button class="ctrlBtn" id="resetBtn">Reset level</button>
+    <button class="ctrlBtn" id="prevBtn">&larr; Prev</button>
+    <button class="ctrlBtn" id="skipBtn">Skip &rarr;</button>
+  </div>
+  <div class="legend">
+    <div class="legItem"><div class="legMirror"></div><span class="legLabel">Mirror — drag to move, tap to spin</span></div>
+    <div class="legItem"><div class="legSplit"></div><span class="legLabel">Splitter — bends &amp; passes through</span></div>
+    <div class="legItem"><div class="legWall"></div><span class="legLabel">Wall — blocks light</span></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   LASER LAB — 10 levels (vanilla JS/HTML port)
+   Drag a mirror to move it (1 step per cell). Tap to rotate (1 step).
+   Route every beam from its source into a matching-color target.
+   ============================================================ */
+
+const DIRS = { R: [0, 1], L: [0, -1], U: [-1, 0], D: [1, 0] };
+const SLASH = { R: "U", U: "R", L: "D", D: "L" }; // "/"
+const BACK  = { R: "D", D: "R", L: "U", U: "L" };  // "\\"
+const COLORS = { R:"#ff4d6d", G:"#7cff6b", C:"#4dd4ff", Y:"#ffd24d", P:"#c77dff", O:"#ff9a3d" };
+
+const LEVELS = [
+  { name:"Warm-Up", size:5, par:2, walls:[], cells:{
+    "2,0":{source:true,dir:"R",color:COLORS.C}, "2,3":{mirror:"\\"}, "0,2":{target:true,color:COLORS.C} }},
+  { name:"Corner Turn", size:6, par:4, walls:[], cells:{
+    "0,0":{source:true,dir:"R",color:COLORS.R}, "2,4":{mirror:"/"}, "3,3":{mirror:"\\"}, "5,1":{target:true,color:COLORS.R} }},
+  { name:"Zigzag", size:6, par:4, walls:["3,5"], cells:{
+    "5,0":{source:true,dir:"R",color:COLORS.G}, "5,5":{mirror:"\\"}, "0,0":{mirror:"\\"}, "0,5":{target:true,color:COLORS.G} }},
+  { name:"Crossfire", size:7, par:6, walls:["3,3"], cells:{
+    "0,0":{source:true,dir:"R",color:COLORS.C}, "6,0":{source:true,dir:"R",color:COLORS.Y},
+    "2,4":{mirror:"/"}, "3,2":{mirror:"/"}, "6,4":{mirror:"\\"}, "5,2":{mirror:"\\"},
+    "3,6":{target:true,color:COLORS.C}, "5,6":{target:true,color:COLORS.Y} }},
+  { name:"Detour Plus", size:7, par:6, walls:["3,3","3,4"], cells:{
+    "3,0":{source:true,dir:"R",color:COLORS.P}, "1,1":{mirror:"\\"}, "5,5":{mirror:"/"}, "3,5":{mirror:"\\"},
+    "0,6":{target:true,color:COLORS.P} }},
+  { name:"Split Decision", size:7, par:6, walls:[], cells:{
+    "3,0":{source:true,dir:"R",color:COLORS.Y}, "0,1":{splitter:"\\"}, "0,3":{target:true,color:COLORS.Y},
+    "6,4":{mirror:"/"}, "6,6":{target:true,color:COLORS.Y} }},
+  { name:"Labyrinth", size:8, par:8, walls:["1,5","2,4","2,3","0,3","0,4","0,5","2,1","3,1","5,6","3,6","2,7"], cells:{
+    "0,0":{source:true,dir:"R",color:COLORS.R}, "2,6":{mirror:"/"}, "4,7":{mirror:"\\"}, "6,2":{mirror:"/"}, "1,3":{mirror:"\\"},
+    "1,4":{target:true,color:COLORS.R} }},
+  { name:"Twin Cross", size:8, par:8, walls:["1,3"], cells:{
+    "0,0":{source:true,dir:"R",color:COLORS.C}, "7,0":{source:true,dir:"R",color:COLORS.G},
+    "2,5":{mirror:"/"}, "3,2":{mirror:"/"}, "5,5":{mirror:"\\"}, "4,2":{mirror:"\\"},
+    "3,6":{target:true,color:COLORS.C}, "4,6":{target:true,color:COLORS.G} }},
+  { name:"Prism", size:8, par:8, walls:[], cells:{
+    "4,0":{source:true,dir:"R",color:COLORS.Y}, "2,3":{splitter:"\\"}, "0,4":{mirror:"\\"}, "0,7":{target:true,color:COLORS.Y},
+    "7,4":{mirror:"/"}, "7,7":{target:true,color:COLORS.Y} }},
+  { name:"Grand Circuit", size:9, par:8, walls:["4,4"], cells:{
+    "0,0":{source:true,dir:"R",color:COLORS.P}, "8,0":{source:true,dir:"R",color:COLORS.O},
+    "2,6":{mirror:"/"}, "3,2":{mirror:"/"}, "6,6":{mirror:"\\"}, "5,2":{mirror:"\\"},
+    "3,8":{target:true,color:COLORS.P}, "5,8":{target:true,color:COLORS.O} }},
+];
+
+const key = (r, c) => r + "," + c;
+
+function traceBeams(size, cells, wallSet) {
+  const litTargets = new Set(), segments = [], beamCells = new Set(), visited = new Set(), sources = [];
+  for (const k in cells) if (cells[k].source) {
+    const p = k.split(",").map(Number);
+    sources.push({ r:p[0], c:p[1], dir:cells[k].dir, color:cells[k].color });
+  }
+  function walk(r0, c0, dir, color) {
+    let r = r0, c = c0, d = dir, s = 0;
+    while (s++ < 2000) {
+      const dd = DIRS[d]; r += dd[0]; c += dd[1];
+      if (r < 0 || c < 0 || r >= size || c >= size) return;
+      const vk = r + "," + c + "," + d; if (visited.has(vk)) return; visited.add(vk);
+      const k = key(r, c); if (wallSet.has(k)) return;
+      beamCells.add(k); segments.push({ r, c, dir: d, color });
+      const cell = cells[k]; if (!cell) continue;
+      if (cell.target) { if (cell.color === color) litTargets.add(k); return; }
+      if (cell.source) return;
+      if (cell.mirror) { d = cell.mirror === "/" ? SLASH[d] : BACK[d]; continue; }
+      if (cell.splitter) { const nd = cell.splitter === "/" ? SLASH[d] : BACK[d]; walk(r, c, nd, color); continue; }
+    }
+  }
+  for (const s of sources) walk(s.r, s.c, s.dir, s.color);
+  return { litTargets, segments, beamCells };
+}
+
+// ---- state ----
+let levelIdx = 0;
+let placed = {};       // key -> {mirror|splitter: orient}
+let steps = 0;
+let drag = null;       // {fromKey, start:{x,y}, ptr:{x,y}, moved}
+
+const boardEl = document.getElementById("board");
+const floatingEl = document.getElementById("floating");
+const solvedTagEl = document.getElementById("solvedTag");
+const stepNumEl = document.getElementById("stepNum");
+const parBoxEl = document.getElementById("parBox");
+const levelStripEl = document.getElementById("levelStrip");
+
+function level() { return LEVELS[levelIdx]; }
+function statics() {
+  const s = {}; const L = level();
+  for (const k in L.cells) if (L.cells[k].source || L.cells[k].target) s[k] = L.cells[k];
+  return s;
+}
+function fullCells() {
+  const out = {}; const st = statics();
+  for (const k in st) out[k] = st[k];
+  for (const k in placed) out[k] = placed[k];
+  return out;
+}
+function occupiedSet() {
+  const L = level(); const o = new Set(Object.keys(statics()).concat(L.walls));
+  for (const k in placed) o.add(k);
+  return o;
+}
+
+function loadLevel(i) {
+  levelIdx = ((i % LEVELS.length) + LEVELS.length) % LEVELS.length;
+  placed = {};
+  const L = level();
+  for (const k in L.cells) {
+    const c = L.cells[k];
+    if (c.mirror) placed[k] = { mirror: c.mirror };
+    else if (c.splitter) placed[k] = { splitter: c.splitter };
+  }
+  steps = 0; drag = null;
+  render();
+}
+
+function pieceHTML(piece, big) {
+  const orient = piece.mirror || piece.splitter;
+  const isSplit = !!piece.splitter;
+  const size = big ? "46px" : "78%";
+  const bg = isSplit
+    ? "repeating-linear-gradient(90deg,#ffd24d,#ffd24d 5px,#0a1420 5px,#0a1420 9px)"
+    : "linear-gradient(90deg,#eaf6ff,#9cc3dd)";
+  const shadow = isSplit ? "0 0 8px #ffd24d88" : "0 0 10px rgba(180,220,255,.7)";
+  const rot = orient === "/" ? -45 : 45;
+  return '<div style="width:' + size + ';height:6px;transform:rotate(' + rot + 'deg);border-radius:4px;background:' + bg + ';box-shadow:' + shadow + ';"></div>';
+}
+
+function arrowHTML(dir) {
+  const rot = { R:0, D:90, L:180, U:270 }[dir];
+  return '<svg viewBox="0 0 24 24" width="14" height="14" style="transform:rotate(' + rot + 'deg)"><path d="M4 12h12M12 6l6 6-6 6" stroke="#0a1420" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
+function beamSvgHTML(segs) {
+  let lines = "";
+  for (const s of segs) {
+    const horiz = s.dir === "R" || s.dir === "L";
+    const x1 = horiz ? 0 : 50, y1 = horiz ? 50 : 0, x2 = horiz ? 100 : 50, y2 = horiz ? 50 : 100;
+    lines += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + s.color + '" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 4px ' + s.color + ')"/>';
+  }
+  if (segs.length > 1) lines += '<circle cx="50" cy="50" r="5" fill="' + segs[0].color + '"/>';
+  return '<svg viewBox="0 0 100 100" class="beamSvg">' + lines + '</svg>';
+}
+
+function render() {
+  const L = level();
+  const N = L.size;
+  const wallSet = new Set(L.walls);
+  const cells = fullCells();
+  const trace = traceBeams(N, cells, wallSet);
+  const { litTargets, segments, beamCells } = trace;
+  const targetKeys = Object.keys(cells).filter(k => cells[k].target);
+  const solved = targetKeys.length > 0 && targetKeys.every(k => litTargets.has(k));
+  const occ = occupiedSet();
+
+  // segment color per cell
+  const cellBeam = {};
+  for (const s of segments) { const k = key(s.r, s.c); if (!cellBeam[k]) cellBeam[k] = s.color; }
+
+  // header
+  stepNumEl.textContent = steps;
+  parBoxEl.textContent = L.par <= 2 ? "Tutorial" : "Par " + L.par + "+";
+
+  // level strip
+  levelStripEl.innerHTML = "";
+  LEVELS.forEach((lv, i) => {
+    const b = document.createElement("button");
+    b.className = "levelChip" + (i === levelIdx ? " active" : "") + (i < levelIdx ? " done" : "");
+    b.textContent = i + 1;
+    b.onclick = () => loadLevel(i);
+    levelStripEl.appendChild(b);
+  });
+
+  // board
+  boardEl.style.gridTemplateColumns = "repeat(" + N + ", 1fr)";
+  boardEl.innerHTML = "";
+  for (let i = 0; i < N * N; i++) {
+    const r = Math.floor(i / N), c = i % N, k = key(r, c);
+    const cell = cells[k];
+    const isWall = wallSet.has(k);
+    const lit = beamCells.has(k);
+    const beamColor = cellBeam[k];
+    const dragging = drag && drag.fromKey === k && drag.moved;
+    const dropTarget = drag && drag.moved && !occ.has(k);
+
+    const div = document.createElement("div");
+    div.className = "cell";
+    div.style.background = (r + c) % 2 === 0 ? "#0d1826" : "#0a1420";
+    div.style.boxShadow = lit && beamColor ? "inset 0 0 16px " + beamColor + "55" : "none";
+    div.style.outline = dropTarget ? "1px dashed #2f4a63" : "none";
+    div.style.outlineOffset = "-3px";
+
+    let html = "";
+    if (lit) html += beamSvgHTML(segments.filter(s => s.r === r && s.c === c));
+    if (isWall) html += '<div class="wall"></div>';
+    if (cell && cell.source) html += '<div class="source" style="background:' + cell.color + ';box-shadow:0 0 18px ' + cell.color + '">' + arrowHTML(cell.dir) + '</div>';
+    if (cell && cell.target) {
+      const on = litTargets.has(k);
+      html += '<div class="target" style="border-color:' + cell.color + ';background:' + (on ? cell.color : "transparent") + ';box-shadow:' + (on ? "0 0 22px " + cell.color : "none") + '"><div class="targetCore" style="background:' + (on ? "#fff" : cell.color) + '"></div></div>';
+    }
+    div.innerHTML = html;
+
+    if (placed[k] && !dragging) {
+      const pw = document.createElement("div");
+      pw.className = "pieceWrap";
+      pw.style.cursor = solved ? "default" : "grab";
+      pw.innerHTML = pieceHTML(placed[k], false);
+      if (!solved) pw.addEventListener("pointerdown", (e) => onPointerDown(e, k));
+      div.appendChild(pw);
+    }
+    boardEl.appendChild(div);
+  }
+
+  // floating dragged piece
+  floatingEl.innerHTML = "";
+  if (drag && drag.moved && placed[drag.fromKey]) {
+    const f = document.createElement("div");
+    f.className = "floating";
+    f.style.left = drag.ptr.x + "px";
+    f.style.top = drag.ptr.y + "px";
+    f.innerHTML = pieceHTML(placed[drag.fromKey], true);
+    floatingEl.appendChild(f);
+  }
+
+  // solved overlay
+  solvedTagEl.innerHTML = "";
+  if (solved) {
+    const perfect = steps <= L.par ? "  \u2605 perfect" : "";
+    const last = levelIdx >= LEVELS.length - 1;
+    const wrap = document.createElement("div");
+    wrap.className = "solvedTag";
+    wrap.innerHTML =
+      '<span class="solvedText">SOLVED</span>' +
+      '<span class="solvedSub">' + steps + ' steps &middot; par ' + L.par + perfect + '</span>';
+    const btn = document.createElement("button");
+    btn.className = "nextBtn";
+    btn.textContent = last ? "Back to start" : "Next level \u2192";
+    btn.onclick = () => loadLevel(last ? 0 : levelIdx + 1);
+    wrap.appendChild(btn);
+    solvedTagEl.appendChild(wrap);
+  }
+}
+
+// ---- interaction ----
+function cellFromPoint(clientX, clientY) {
+  const rect = boardEl.getBoundingClientRect();
+  const x = clientX - rect.left, y = clientY - rect.top;
+  if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+  const N = level().size;
+  const c = Math.floor((x / rect.width) * N);
+  const r = Math.floor((y / rect.height) * N);
+  if (r < 0 || c < 0 || r >= N || c >= N) return null;
+  return key(r, c);
+}
+
+function onPointerDown(e, k) {
+  if (!placed[k]) return;
+  e.preventDefault();
+  drag = { fromKey: k, start: { x: e.clientX, y: e.clientY }, ptr: { x: e.clientX, y: e.clientY }, moved: false };
+}
+
+function rotate(k) {
+  const p = placed[k]; if (!p) return;
+  if (p.mirror) placed[k] = { mirror: p.mirror === "/" ? "\\" : "/" };
+  else placed[k] = { splitter: p.splitter === "/" ? "\\" : "/" };
+  steps += 1;
+}
+
+window.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.start.x, dy = e.clientY - drag.start.y;
+  drag.ptr = { x: e.clientX, y: e.clientY };
+  const wasMoving = drag.moved;
+  if (!drag.moved && Math.hypot(dx, dy) > 6) drag.moved = true;
+  if (drag.moved) render(); // update floating + drop highlights
+  else if (wasMoving !== drag.moved) render();
+});
+
+window.addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  if (!drag.moved) {
+    rotate(drag.fromKey);
+  } else {
+    const destKey = cellFromPoint(e.clientX, e.clientY);
+    const occ = occupiedSet();
+    if (destKey && !occ.has(destKey) && destKey !== drag.fromKey) {
+      const a = drag.fromKey.split(",").map(Number);
+      const b = destKey.split(",").map(Number);
+      const cost = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+      const p = placed[drag.fromKey];
+      delete placed[drag.fromKey];
+      placed[destKey] = p;
+      steps += cost;
+    }
+  }
+  drag = null;
+  render();
+});
+
+document.getElementById("resetBtn").onclick = () => loadLevel(levelIdx);
+document.getElementById("prevBtn").onclick = () => loadLevel(levelIdx - 1);
+document.getElementById("skipBtn").onclick = () => loadLevel(levelIdx + 1);
+
+loadLevel(0);
+</script>
+</body>
+</html>
